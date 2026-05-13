@@ -88,6 +88,8 @@ tr.alt td{background:#f9fafb}
 .btn-p{background:#1B3A5C;color:#fff;border-color:#1B3A5C}
 .btn-p:hover{background:#152e4a}
 .btn-rst{margin-left:auto;font-size:11px;color:#8492a6;background:none;border:none;cursor:pointer;text-decoration:underline}
+.btn-nuevo{padding:8px 18px;border-radius:6px;border:none;background:#1D9E75;color:#fff;font-size:12px;font-weight:600;cursor:pointer;margin-left:auto;transition:opacity .15s}
+.btn-nuevo:hover{opacity:.85}
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1B3A5C;color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:999;white-space:nowrap}
 .toast.show{opacity:1}
 .van-section{margin-top:1rem}
@@ -265,10 +267,8 @@ tr.ter-vencido td:first-child{color:#e65100}
       <span class="hist-badge" id="hist-badge" style="display:none"></span>
     </div>
     <div class="actions">
-      <button class="btn btn-p" onclick="cp('base')">Copiar C.C. + Sucursal</button>
-      <button class="btn" onclick="cp('all')">Copiar todo para Sheet</button>
-      <button class="btn-excel" onclick="exportXLSX()">&#x1F4E5; Descargar Excel</button>
-      <button class="btn-rst" onclick="reset()">Nuevo proceso</button>
+      <button class="btn btn-p" onclick="cp('all')">Copiar todo para Sheet</button>
+      <button class="btn-nuevo" onclick="reset()">&#x21BA; Nuevo proceso</button>
     </div>
   </div>
 </div>
