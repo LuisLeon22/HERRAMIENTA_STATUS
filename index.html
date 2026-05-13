@@ -293,9 +293,9 @@ tr.ter-vencido td:first-child{color:#e65100}
 <div class="toast" id="toast"></div>
 
 <script>
-const SEG_GPON='EN REVISIÓN DE MEDIO DE TRANSPORTE EN ATENCIÓN POR PERSONAL DE PLANTA EXTERNA';
-const SEG_LTE='EN REVISIÓN DE RADIO BASE EN ATENCIÓN POR PERSONAL DE TELCEL';
-const SEG_FIBRA='CORTE A CABLE DE FIBRA ÓPTICA EN ATENCIÓN POR PERSONAL DE PLANTA EXTERNA';
+const SEG_GPON='EN REVISION DE MEDIO DE TRANSPORTE EN ATENCION POR PERSONAL DE PLANTA EXTERNA';
+const SEG_LTE='EN REVISION DE RADIOBASE EN ATENCION POR PERSONAL DE TELCEL';
+const SEG_FIBRA='CORTE A CABLE DE FIBRA OPTICA EN ATENCION POR PERSONAL DE PLANTA EXTERNA';
 
 
 
@@ -534,30 +534,30 @@ function inferSeg(d,group){
     const ent=extractEntidad(D);
     const base='FALLA MASIVA IMCNOC'+imcM[1]+(ent?' '+ent:'');
     if(['FIBRA','CORTE','CABLE'].some(x=>D.includes(x)))
-      return{seg:base+' CORTE A CABLE DE FIBRA ÓPTICA EN ATENCIÓN POR PERSONAL DE PLANTA EXTERNA'+ter,tag:'masiva'};
+      return{seg:base+' CORTE A CABLE DE FIBRA OPTICA EN ATENCION POR PERSONAL DE PLANTA EXTERNA'+ter,tag:'masiva'};
     return{seg:base+' EN DIAGNOSTICO POR PERSONAL DE PLANTA EXTERNA'+ter,tag:'masiva'};
   }
 
   // 2. Fibra / Corte
   if(['FIBRA','CORTE DE F','CORTE A CABLE','CABLE DE FIBRA'].some(x=>D.includes(x)))
-    return{seg:'CORTE A CABLE DE FIBRA ÓPTICA EN ATENCIÓN POR PERSONAL DE PLANTA EXTERNA'+ter,tag:'fibra'};
+    return{seg:'CORTE A CABLE DE FIBRA OPTICA EN ATENCION POR PERSONAL DE PLANTA EXTERNA'+ter,tag:'fibra'};
 
   // 3. Modem / Modo puente
   if(['MODEM','MODO PUENTE','CONFIGURACION MODEM','BRIDGE MODE'].some(x=>D.includes(x)))
-    return{seg:'EN REVISIÓN DE MEDIO DE TRANSPORTE ASISTE IDC PARA REVISAR CONFIGURACION MODO PUENTE',tag:'gpon'};
+    return{seg:'EN REVISION DE MEDIO DE TRANSPORTE ASISTE IDC PARA REVISAR CONFIGURACION MODO PUENTE',tag:'gpon'};
 
   // 4. Energía
   if(['ENERGIA','ENERGÍA'].some(x=>D.includes(x))){
     if(D.includes('UPS')||['DANADO','DA\u00d1ADO'].some(x=>D.includes(x)))
-      return{seg:'FALLA DE ENERGÍA POR UPS GENERAL DA\u00d1ADO',tag:'ups'};
+      return{seg:'FALLA DE ENERGIA POR UPS GENERAL DA\u00d1ADO',tag:'ups'};
     if(D.includes('CONFIRMADA'))
-      return{seg:'FALLA DE ENERGÍA CONFIRMADA',tag:'ups'};
-    return{seg:'FALLA DE ENERGÍA CONFIRMADA ***FAVOR DE VALIDAR EN SM***',tag:'validar'};
+      return{seg:'FALLA DE ENERGIA CONFIRMADA',tag:'ups'};
+    return{seg:'FALLA DE ENERGIA CONFIRMADA ***FAVOR DE VALIDAR EN SM***',tag:'validar'};
   }
 
   // 5. ONT apagada
   if(D.includes('ONT')&&['APAGADA','SIN RESPUESTA','SIN POTENCIA','OFF'].some(x=>D.includes(x)))
-    return{seg:'POSIBLE FALLA DE ENERGÍA EN SUCURSAL ***FAVOR DE VALIDAR EN SM***',tag:'validar'};
+    return{seg:'POSIBLE FALLA DE ENERGIA EN SUCURSAL ***FAVOR DE VALIDAR EN SM***',tag:'validar'};
 
   // 6. Siniestro / robo
   if(['SINIESTRO','ROBO','HURTO'].some(x=>D.includes(x)))
@@ -565,23 +565,23 @@ function inferSeg(d,group){
 
   // 7. Radiobase / Telcel
   if(['RADIOBASE','RADIO BASE','TELCEL','RADIOBAS'].some(x=>D.includes(x)))
-    return{seg:'EN REVISIÓN DE RADIO BASE EN ATENCIÓN POR PERSONAL DE TELCEL'+ter,tag:'lte'};
+    return{seg:'EN REVISION DE RADIOBASE EN ATENCION POR PERSONAL DE TELCEL'+ter,tag:'lte'};
 
   // 8. PDT — Pendiente
-  if(['PDT ','PDT\t','PDT REVISIÓN','PDT POR','PENDIENTE POR'].some(x=>D.includes(x))){
+  if(['PDT ','PDT\t','PDT REVISION','PDT POR','PENDIENTE POR'].some(x=>D.includes(x))){
     const gt=getGroupType(group);
-    const b=gt==='lte'?'EN REVISIÓN DE RADIO BASE EN ATENCION POR PERSONAL DE TELCEL':'EN REVISIÓN DE MEDIO DE TRANSPORTE EN ATENCION POR PERSONAL DE PLANTA EXTERNA';
+    const b=gt==='lte'?'EN REVISION DE RADIOBASE':'EN REVISION DE MEDIO DE TRANSPORTE';
     return{seg:b+' ***FAVOR DE VALIDAR***'+ter,tag:'validar'};
   }
 
   // 9. TX / Transmisiones
   if(['TRANSMISIONES','TRANSPORTE','PLANTA EXTERNA','SEG TX','SEGUIMIENTO TX'].some(x=>D.includes(x)))
-    return{seg:'EN REVISIÓN DE MEDIO DE TRANSPORTE EN ATENCIÓN CON PERSONAL DE PLANTA EXTERNA'+ter,tag:'gpon'};
+    return{seg:'EN REVISION DE MEDIO DE TRANSPORTE EN ATENCION CON PERSONAL DE PLANTA EXTERNA'+ter,tag:'gpon'};
 
   // 10. Sin coincidencia — genérico por tipo de grupo
   const gt=getGroupType(group);
-  if(gt==='lte')  return{seg:'EN REVISIÓN DE RADIO BASE EN ATENCIÓN POR PERSONAL DE TELCEL ***FAVOR DE VALIDAR***'+ter,tag:'validar'};
-  if(gt==='gpon') return{seg:'EN REVISIÓN DE MEDIO DE TRANSPORTE EN ATENCIÓN CON PERSONAL DE PLANTA EXTERNA ***FAVOR DE VALIDAR***'+ter,tag:'validar'};
+  if(gt==='lte')  return{seg:'EN REVISION DE RADIOBASE EN ATENCION POR PERSONAL DE TELCEL ***FAVOR DE VALIDAR***'+ter,tag:'validar'};
+  if(gt==='gpon') return{seg:'EN REVISION DE MEDIO DE TRANSPORTE EN ATENCION CON PERSONAL DE PLANTA EXTERNA ***FAVOR DE VALIDAR***'+ter,tag:'validar'};
   return null;
 }
 
@@ -1005,7 +1005,7 @@ async function run(){
 
       if(myChk){
         seg=myChk.seg;
-        inicio=myChk.hora?('CHECK '+myChk.hora):(inc_r?inc_r.time:'');
+        inicio=inc_r?inc_r.time:'';
         tag='check';
       } else if(isVan){
         seg=VAN_MAP[ccN].seg||'';
@@ -1098,5 +1098,3 @@ function reset(){
 </script>
 </body>
 </html>
-
-
