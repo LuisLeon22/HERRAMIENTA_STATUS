@@ -220,13 +220,12 @@ tr.ter-vencido td:first-child{color:#e65100}
       <div style="margin-top:.75rem">
         <div class="chk-table-wrap">
           <table class="chk-table">
-            <thead><tr><th style="width:58px">C.C.</th><th style="width:160px">Sucursal</th><th>Seguimiento verificado</th><th style="width:90px">Hora</th><th style="width:36px"></th></tr></thead>
+            <thead><tr><th style="width:58px">C.C.</th><th style="width:160px">Sucursal</th><th>Seguimiento verificado</th><th style="width:36px"></th></tr></thead>
             <tbody id="chk-tbody"></tbody>
             <tbody><tr style="background:#f0faf6">
               <td><input class="van-input" id="chk-new-cc" placeholder="C.C." type="number"></td>
               <td><input class="van-input" id="chk-new-suc" placeholder="Sucursal"></td>
               <td><input class="van-input" id="chk-new-seg" placeholder="Status verificado con usuario"></td>
-              <td><input class="van-input" id="chk-new-hora" placeholder="HH:MM"></td>
               <td><button class="btn-van-add" onclick="chkAdd()" style="background:#2d6a4f">+</button></td>
             </tr></tbody>
           </table>
@@ -793,21 +792,19 @@ function chkGetMap(){
   document.querySelectorAll('#chk-tbody tr').forEach(row=>{
     const cc=parseInt(row.querySelector('strong')&&row.querySelector('strong').textContent||'0',10);
     const tds=row.querySelectorAll('td');
-    if(!cc||tds.length<4)return;
+    if(!cc||tds.length<3)return;
     const seg=(tds[2].childNodes[0]&&tds[2].childNodes[0].textContent||'').trim();
-    const hora=(tds[3].textContent||'').trim();
-    if(cc&&seg)map[cc]={seg,hora};
+    if(cc&&seg)map[cc]={seg};
   });
   return map;
 }
 function chkRender(arr){
   const tb=document.getElementById('chk-tbody');
-  if(!arr||!arr.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:#adb5bd;font-size:11px;padding:10px">Sin checks registrados</td></tr>';return;}
+  if(!arr||!arr.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:#adb5bd;font-size:11px;padding:10px">Sin checks registrados</td></tr>';return;}
   tb.innerHTML=arr.map(c=>`<tr>
     <td><strong style="color:#065f46">${c.cc}</strong></td>
     <td style="font-size:11px">${c.suc||''}</td>
     <td style="font-size:11px;white-space:normal">${c.seg||''} <span class="chk-badge">CHECK</span></td>
-    <td style="font-size:11px;color:#8492a6">${c.hora||''}</td>
     <td><button class="btn-del" onclick="chkDel(${c.cc})">&#x2715;</button></td>
   </tr>`).join('');
 }
@@ -816,8 +813,7 @@ async function chkAdd(){
   const suc=document.getElementById('chk-new-suc').value.trim();
   const seg=document.getElementById('chk-new-seg').value.trim().toUpperCase();
   const now=new Date();
-  const hora=document.getElementById('chk-new-hora').value.trim()||
-    now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const hora=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
   const fecha=now.toLocaleDateString('es-MX');
   if(!cc){alert('El C.C. es obligatorio');return;}
   if(!seg){alert('El seguimiento es obligatorio');return;}
@@ -826,7 +822,7 @@ async function chkAdd(){
     showToast('Check guardado para todo el equipo');
     chkLoad();
   }catch(e){syncErr('Error: '+e.message);}
-  ['chk-new-cc','chk-new-suc','chk-new-seg','chk-new-hora'].forEach(id=>document.getElementById(id).value='');
+  ['chk-new-cc','chk-new-suc','chk-new-seg'].forEach(id=>document.getElementById(id).value='');
 }
 async function chkDel(cc){
   try{await supaFetch('checks_dia','DELETE',null,'cc=eq.'+cc);chkLoad();}
@@ -1098,3 +1094,5 @@ function reset(){
 </script>
 </body>
 </html>
+
+
