@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HERRAMIENTA - STATUS SUCURSALES</title>
+<style>
+/* Estilos base que ya tenías */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh}
+
+/* HEADER ACTUALIZADO PARA LOGOS */
+header{
+  background:#1B3A5C;
+  color:#fff;
+  padding:.6rem 2rem;
+  display:flex;
+  align-items:center;
+  justify-content:space-between; /* Esto empuja los logos a los extremos */
+}
+.header-logo{
+  height:45px;
+  width:auto;
+}
+/* Logo Telmex: lo invertimos a blanco para que resalte en el azul */
+.logo-white{
+  filter: brightness(0) invert(1);
+}
+/* Logo Bienestar: lo dejamos original o ajustamos altura */
+.logo-bienestar {
+    filter: none; 
+    height: 55px;
+}
+
+header h1{font-size:15px;font-weight:600;letter-spacing:.02em}
+header small{font-size:11px;opacity:.55;display:block}
+.header-center{text-align:center}
+
+/* Resto de tus estilos (sin cambios) */
+.container{max-width:1200px;margin:0 auto;padding:1.25rem 1rem}
+.card{background:#fff;border-radius:10px;border:1px solid #dde2ea;padding:1.25rem;margin-bottom:1rem}
+.card h2{font-size:11px;font-weight:700;color:#1B3A5C;text-transform:uppercase;letter-spacing:.07em;margin-bottom:1rem}
+.upload-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.dz{border:1.5px dashed #c5cdd8;border-radius:8px;padding:1.1rem .75rem;text-align:center;cursor:pointer;transition:all .15s;background:#fafbfc;position:relative}
+.dz:hover,.dz.over{background:#eef3f8;border-color:#1B3A5C}
+.dz.done{border-color:#1D9E75;background:#f0faf6}
+.dz input{display:none}
+.dz-icon{font-size:20px;margin-bottom:5px;display:block}
+.dz-label{font-size:12px;font-weight:600;color:#1B3A5C;display:block;margin-bottom:2px}
+.dz-sub{font-size:10px;color:#8492a6;display:block}
+.dz-opt{font-size:10px;color:#adb5bd;display:block;margin-top:2px}
+.dz.done .dz-label{color:#085041}
+.dz.done .dz-sub{color:#0F6E56}
+.info-box{margin-top:10px;font-size:11px;padding:7px 10px;border-radius:6px;background:#eef3f8;color:#4a6785;line-height:1.5}
+.info-box.ok{background:#e1f5ee;color:#085041}
+.info-box.warn{background:#fff8e1;color:#856404}
+.btn-run{width:100%;padding:11px;border-radius:7px;border:none;background:#1B3A5C;color:#fff;font-size:13px;font-weight:600;cursor:pointer;margin-top:.9rem;transition:opacity .15s}
+.btn-run:disabled{opacity:.35;cursor:not-allowed}
+.btn-run:not(:disabled):hover{opacity:.88}
+.err-box{color:#c0392b;font-size:12px;margin-top:.5rem;padding:8px 10px;background:#fef0ef;border-radius:6px;border:1px solid #f5c6c2}
+.stats{display:flex;gap:8px;margin-bottom:.9rem}
+.stat{background:#f0f2f5;border-radius:7px;padding:.55rem .9rem;flex:1;text-align:center}
+.stat-lbl{font-size:10px;color:#8492a6;text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px}
+.stat-val{font-size:20px;font-weight:700;color:#1B3A5C}
+.stat-val.g{color:#0F6E56}.stat-val.r{color:#A32D2D}
+.legend{display:flex;gap:12px;margin-bottom:.75rem;flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:5px;font-size:10px;color:#8492a6}
+.leg-dot{width:9px;height:9px;border-radius:2px;border:1px solid rgba(0,0,0,.1)}
+.tw{border:1px solid #dde2ea;border-radius:8px;overflow:hidden;max-height:480px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+thead th{background:#1B3A5C;color:#fff;padding:8px 10px;text-align:left;font-weight:500;font-size:10px;letter-spacing:.05em;position:sticky;top:0;z-index:2}
+th:nth-child(1){width:55px}th:nth-child(2){width:160px}th:nth-child(3){width:auto}th:nth-child(4){width:125px}th:nth-child(5){width:125px}
+tbody tr:nth-child(even) td{filter:brightness(.985)}
+tbody td{padding:7px 10px;border-bottom:1px solid #f0f2f5;vertical-align:top;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tbody td:first-child{font-weight:600;color:#4a6785}
+td.seg{white-space:normal;line-height:1.4;font-size:11px}
+.tag{display:inline-block;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;margin-top:3px;text-transform:uppercase}
+.tg{background:#dbeafe;color:#1e40af}.tl{background:#fef3c7;color:#92400e}
+.tf{background:#ede9fe;color:#5b21b6}.tv{background:#fee2e2;color:#991b1b}
+tr.van td{background:#fdeeee}tr.van td:first-child{color:#A32D2D}
+tr.inc td{background:#edfaf4}tr.inc td:first-child{color:#085041}
+tr.ag td{background:#eef4fb}tr.al td{background:#fef8ee}
+tr.alt td{background:#f9fafb}
+.pend{color:#adb5bd;font-style:italic;font-size:11px}
+.actions{display:flex;gap:8px;margin-top:.9rem;align-items:center;flex-wrap:wrap}
+.btn{padding:8px 14px;border-radius:6px;border:1.5px solid #c5cdd8;background:#fff;cursor:pointer;font-size:12px;font-weight:500;color:#1B3A5C;transition:all .12s}
+.btn:hover{background:#eef3f8;border-color:#1B3A5C}
+.btn-p{background:#1B3A5C;color:#fff;border-color:#1B3A5C}
+.btn-p:hover{background:#152e4a}
+.btn-rst{margin-left:auto;font-size:11px;color:#8492a6;background:none;border:none;cursor:pointer;text-decoration:underline}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1B3A5C;color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+.van-section{margin-top:1rem}
+.van-table-wrap{max-height:220px;overflow-y:auto;border:1px solid #dde2ea;border-radius:8px;margin-bottom:.75rem}
+.van-table{width:100%;border-collapse:collapse;font-size:12px}
+.van-table th{background:#1B3A5C;color:#fff;padding:6px 10px;text-align:left;font-size:10px;font-weight:500;position:sticky;top:0}
+.van-table td{padding:5px 8px;border-bottom:1px solid #f0f2f5;vertical-align:middle}
+.van-table tr:hover td{background:#f5f7fa}
+.van-input{width:100%;border:1px solid #dde2ea;border-radius:4px;padding:4px 6px;font-size:11px;font-family:inherit}
+.van-input:focus{outline:none;border-color:#1B3A5C}
+.btn-van-add{padding:6px 14px;border-radius:6px;border:none;background:#1B3A5C;color:#fff;font-size:11px;font-weight:600;cursor:pointer}
+.btn-van-add:hover{opacity:.85}
+.btn-del{background:none;border:none;color:#e74c3c;cursor:pointer;font-size:14px;padding:0 4px}
+.van-row-new td{background:#f0faf6}
+
+.chk-section{margin-top:1rem}
+.chk-table-wrap{max-height:200px;overflow-y:auto;border:1px solid #dde2ea;border-radius:8px;margin-bottom:.6rem}
+.chk-table{width:100%;border-collapse:collapse;font-size:12px}
+.chk-table th{background:#2d6a4f;color:#fff;padding:6px 10px;text-align:left;font-size:10px;font-weight:500;position:sticky;top:0}
+.chk-table td{padding:5px 8px;border-bottom:1px solid #f0f2f5;vertical-align:middle}
+.chk-table tr:hover td{background:#f0faf6}
+.chk-badge{display:inline-block;font-size:9px;background:#d1fae5;color:#065f46;padding:1px 6px;border-radius:3px;font-weight:700}
+.btn-chk-clear{padding:5px 12px;border-radius:6px;border:1px solid #e74c3c;background:#fff;color:#e74c3c;font-size:11px;cursor:pointer}
+.btn-chk-clear:hover{background:#fef0ef}
+tr.validar td{background:#fffbeb}
+tr.validar td:first-child{color:#92400e}
+tr.chk td{background:#ecfdf5}
+tr.chk td:first-child{color:#065f46}
+.hist-bar{display:flex;gap:8px;margin-top:.9rem;align-items:center;flex-wrap:wrap}
+.hist-badge{font-size:10px;background:#eef3f8;color:#1B3A5C;padding:3px 10px;border-radius:12px;border:1px solid #c5cdd8}
+.hist-badge.saved{background:#e1f5ee;color:#085041;border-color:#a7f3d0}
+.btn-hist{padding:7px 14px;border-radius:6px;border:1.5px solid #c5cdd8;background:#fff;cursor:pointer;font-size:11px;font-weight:500;color:#1B3A5C}
+.btn-hist:hover{background:#eef3f8}
+.sync-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px}
+.sync-dot.ok{background:#1D9E75}.sync-dot.err{background:#e74c3c}.sync-dot.loading{background:#f59e0b}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;align-items:flex-start;justify-content:center;padding-top:2rem}
+.modal-overlay.show{display:flex}
+.modal-box{background:#fff;border-radius:12px;border:1px solid #dde2ea;width:96%;max-width:1100px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column}
+.modal-head{background:#1B3A5C;color:#fff;padding:.75rem 1.25rem;display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-size:13px;font-weight:600;margin:0}
+.modal-body{overflow-y:auto;padding:1rem}
+.modal-close{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:0 4px}
+.cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cmp-table{width:100%;border-collapse:collapse;font-size:11px}
+.cmp-table th{background:#f0f2f5;padding:5px 8px;text-align:left;font-size:10px;color:#8492a6;font-weight:500}
+.cmp-table td{padding:5px 8px;border-bottom:1px solid #f5f5f5}
+.cmp-new{background:#e1f5ee}.cmp-gone{background:#fef0ef}.cmp-changed{background:#fff8e1}
+
+/* TER vencido */
+tr.ter-vencido td{background:#fff3e0}
+tr.ter-vencido td:first-child{color:#e65100}
+.badge-ter{display:inline-block;font-size:9px;background:#ff6d00;color:#fff;padding:1px 6px;border-radius:3px;font-weight:700;margin-left:4px}
+/* Contador tiempo */
+.col-tiempo{font-size:10px;font-family:monospace;white-space:nowrap}
+.col-tiempo.warn{color:#e65100;font-weight:600}
+.col-tiempo.crit{color:#c0392b;font-weight:700}
+/* Excel btn */
+.btn-excel{padding:7px 14px;border-radius:6px;border:1.5px solid #1D6F42;background:#fff;cursor:pointer;font-size:11px;font-weight:500;color:#1D6F42}
+.btn-excel:hover{background:#e8f5e9}
+
+.paste-area{width:100%;min-height:70px;border:1.5px dashed #c5cdd8;border-radius:8px;padding:8px 10px;font-size:11px;font-family:monospace;resize:vertical;color:#1a1a2e;background:#fafbfc}
+.paste-area:focus{outline:none;border-color:#1B3A5C;background:#fff}
+.paste-area::placeholder{color:#adb5bd}
+.btn-paste-import{padding:7px 16px;border-radius:6px;border:none;background:#1B3A5C;color:#fff;font-size:11px;font-weight:600;cursor:pointer}
+.btn-paste-import:hover{opacity:.85}
+@media(max-width:680px){.upload-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <img src="https://upload.wikimedia.org/wikipedia/commons/4/46/Logo_Banco_del_Bienestar.png" class="header-logo logo-bienestar">
+  
+  <div class="header-center">
+    <h1>STATUS DE SUCURSALES TELMEX</h1>
+    <small> CNOC · Banco del Bienestar</small>
+  </div>
+
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Telmex_Logo.svg/960px-Telmex_Logo.svg.png" class="header-logo logo-white">
+</header>
+<div class="container">
+  <div class="card">
+    <h2>Cargar archivos</h2>
+    <div class="upload-grid" style="grid-template-columns:1fr 1fr">
+      <div class="dz" id="dz-inc" onclick="document.getElementById('fi-inc').click()">
+        <input type="file" id="fi-inc" accept=".xlsx,.xls,.csv">
+        <span class="dz-icon">⚠️⚠️⚠️</span>
+        <span class="dz-label">Incidentes</span>
+        <span class="dz-sub">Excel o CSV — Service Manager</span>
+      </div>
+      <div class="dz" id="dz-wan" onclick="document.getElementById('fi-wan').click()">
+        <input type="file" id="fi-wan" accept=".xlsx,.xls,.csv">
+        <span class="dz-icon">🚨📡🚨</span>
+        <span class="dz-label">Critical WANs</span>
+        <span class="dz-sub">Excel o CSV — Telmex Control Center</span>
+      </div>
+    </div>
+    <div class="info-box" id="info-box">Listo para procesar.</div>
+    <div class="err-box" id="err-box" style="display:none"></div>
+    <details class="van-section" id="van-details">
+      <summary style="cursor:pointer;font-size:11px;font-weight:700;color:#1B3A5C;text-transform:uppercase;letter-spacing:.07em;padding:.4rem 0;user-select:none">
+        ▶ Sitios con status fijo *temporal* (<span id="van-count">0</span>) — clic para editar
+      </summary>
+      <div style="margin-top:.75rem">
+        <div class="van-table-wrap">
+          <table class="van-table">
+            <thead><tr><th style="width:60px">C.C.</th><th style="width:180px">Sucursal</th><th>Seguimiento</th><th style="width:130px">Inicio</th><th style="width:36px"></th></tr></thead>
+            <tbody id="van-tbody"></tbody>
+            <tbody>
+              <tr class="van-row-new">
+                <td><input class="van-input" id="van-new-cc" placeholder="C.C." type="number"></td>
+                <td><input class="van-input" id="van-new-suc" placeholder="Sucursal"></td>
+                <td><input class="van-input" id="van-new-seg" placeholder="Seguimiento"></td>
+                <td><input class="van-input" id="van-new-ini" placeholder="dd/mm/aaaa hh:mm"></td>
+                <td><button class="btn-van-add" onclick="vanAdd()">+</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:10px;color:#adb5bd">Los cambios se guardan automáticamente en este navegador.</div>
+      </div>
+    </details>
+
+    <div id="sync-status" style="font-size:10px;color:#8492a6;margin-top:.5rem;padding:4px 0">
+      <span class="sync-dot loading" id="sync-dot"></span><span id="sync-msg">Conectando...</span>
+    </div>
+    <details class="chk-section" id="chk-details">
+      <summary style="cursor:pointer;font-size:11px;font-weight:700;color:#2d6a4f;text-transform:uppercase;letter-spacing:.07em;padding:.4rem 0;user-select:none">
+        &#x2705; Mis checks del d&#xED;a (<span id="chk-count">0</span>) &#x2014; clic para ver/agregar
+      </summary>
+      <div style="margin-top:.75rem">
+        <div class="chk-table-wrap">
+          <table class="chk-table">
+            <thead><tr><th style="width:58px">C.C.</th><th style="width:160px">Sucursal</th><th>Seguimiento verificado</th><th style="width:90px">Hora</th><th style="width:36px"></th></tr></thead>
+            <tbody id="chk-tbody"></tbody>
+            <tbody><tr style="background:#f0faf6">
+              <td><input class="van-input" id="chk-new-cc" placeholder="C.C." type="number"></td>
+              <td><input class="van-input" id="chk-new-suc" placeholder="Sucursal"></td>
+              <td><input class="van-input" id="chk-new-seg" placeholder="Status verificado con usuario"></td>
+              <td><input class="van-input" id="chk-new-hora" placeholder="HH:MM"></td>
+              <td><button class="btn-van-add" onclick="chkAdd()" style="background:#2d6a4f">+</button></td>
+            </tr></tbody>
+          </table>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:10px;color:#adb5bd;flex:1">Checks visibles para todo el equipo. Tienen prioridad sobre SM.</span>
+          <button class="btn-chk-clear" onclick="chkClear()">&#x1F5D1; Limpiar todos</button>
+        </div>
+      </div>
+    </details>
+    <button class="btn-run" id="btn-run" disabled onclick="run()">Procesar y cruzar archivos</button>
+  </div>
+
+  <div class="card" id="results" style="display:none">
+    <div class="stats" id="stats"></div>
+    <div class="legend">
+      <span class="leg"><span class="leg-dot" style="background:#fdeeee"></span>Vandalizada</span>
+      <span class="leg"><span class="leg-dot" style="background:#edfaf4"></span>Con incidente activo</span>
+      <span class="leg"><span class="leg-dot" style="background:#eef4fb"></span>Auto GPON/RPV</span>
+      <span class="leg"><span class="leg-dot" style="background:#fef8ee"></span>Auto LTE</span>
+      <span class="leg"><span class="leg-dot" style="background:#f9fafb"></span>Sin incidente</span>
+      <span class="leg"><span class="leg-dot" style="background:#ecfdf5;border-color:#5DCAA5"></span>Mi check</span>
+      <span class="leg"><span class="leg-dot" style="background:#fffbeb;border-color:#EF9F27"></span>&#x26A0; Validar</span>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th>C.C.</th><th>Sucursal</th><th>Seguimiento</th><th>Inicio</th><th>Fin</th><th style="width:70px">Tiempo</th>
+        </tr></thead>
+        <tbody id="tb"></tbody>
+      </table>
+    </div>
+
+    <div class="hist-bar">
+      <button class="btn-hist" onclick="histSave()">&#x1F4BE; Guardar este corte</button>
+      <button class="btn-hist" id="btn-compare" onclick="histCompare()" style="display:none">&#x1F504; Comparar con anterior</button>
+      <span class="hist-badge" id="hist-badge" style="display:none"></span>
+    </div>
+    <div class="actions">
+      <button class="btn btn-p" onclick="cp('base')">Copiar C.C. + Sucursal</button>
+      <button class="btn" onclick="cp('all')">Copiar todo para Sheet</button>
+      <button class="btn-excel" onclick="exportXLSX()">&#x1F4E5; Descargar Excel</button>
+      <button class="btn-rst" onclick="reset()">Nuevo proceso</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-compare">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modal-title">Comparacion de cortes</h3>
+      <button class="modal-close" onclick="document.getElementById('modal-compare').classList.remove('show')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:12px;margin-bottom:.75rem;font-size:10px;color:#8492a6">
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#e1f5ee;border:1px solid #5DCAA5;margin-right:3px"></span>Nuevo</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#fef0ef;border:1px solid #F0997B;margin-right:3px"></span>Salio</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#fff8e1;border:1px solid #EF9F27;margin-right:3px"></span>Cambio</span>
+      </div>
+      <div class="cmp-grid" id="cmp-grid"></div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SEG_GPON='EN REVISIÓN DE MEDIO DE TRANSPORTE EN ATENCIÓN POR PERSONAL DE PLANTA EXTERNA';
+const SEG_LTE='EN REVISIÓN DE RADIO BASE EN ATENCIÓN POR PERSONAL DE TELCEL';
+const SEG_FIBRA='CORTE A CABLE DE FIBRA ÓPTICA EN ATENCIÓN POR PERSONAL DE PLANTA EXTERNA';
+
+
+
+
+
+
+
+let fileInc=null,fileWan=null,rows=[];
+
+// ── Parsers ──────────────────────────────────────────────
+function parseCSV(text){
+  const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  if(!lines.length)return[];
+  const hdr=splitCSVLine(lines[0]);
+  const out=[];
+  for(let i=1;i<lines.length;i++){
+    if(!lines[i].trim())continue;
+    const cols=splitCSVLine(lines[i]);
+    const obj={};
+    hdr.forEach((h,j)=>obj[h.trim()]=cols[j]!=null?String(cols[j]).trim():'');
+    out.push(obj);
+  }
+  return out;
+}
+
+function splitCSVLine(line){
+  const res=[];let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+    else if(c===','&&!inQ){res.push(cur);cur='';}
+    else cur+=c;
+  }
+  res.push(cur);
+  return res;
+}
+
+function parseXLSXBinary(ab){
+  // Parse XLSX/XLS using binary read — no external library needed
+  // Detect format and route
+  const bytes=new Uint8Array(ab);
+  // ZIP magic = PK (XLSX)
+  if(bytes[0]===0x50&&bytes[1]===0x4B)return parseXLSX(ab);
+  // Try as CSV text
+  const text=new TextDecoder('utf-8').decode(ab);
+  return{sheets:{'Sheet1':parseCSV(text)}};
+}
+
+function parseXLSX(ab){
+  // Minimal XLSX parser using ZIP + XML
+  try{
+    const zip=readZIP(ab);
+    const sheets={};
+    // Find sheet names from workbook
+    const wbXml=zip['xl/workbook.xml']||zip['xl/workbook.xml '];
+    const sharedXml=zip['xl/sharedStrings.xml'];
+    const sharedStr=sharedXml?parseSharedStrings(sharedXml):[];
+    const sheetNames=parseSheetNames(wbXml);
+    sheetNames.forEach((name,idx)=>{
+      const key=`xl/worksheets/sheet${idx+1}.xml`;
+      const xml=zip[key]||zip[key+' '];
+      if(xml)sheets[name]=parseWorksheet(xml,sharedStr);
+    });
+    return{sheets};
+  }catch(e){
+    return{sheets:{},error:e.message};
+  }
+}
+
+function readZIP(ab){
+  // Minimal ZIP reader
+  const view=new DataView(ab);const files={};
+  let offset=0;
+  while(offset<ab.byteLength-4){
+    if(view.getUint32(offset,true)!==0x04034b50){offset++;continue;}
+    const fnLen=view.getUint16(offset+26,true);
+    const extraLen=view.getUint16(offset+28,true);
+    const compSize=view.getUint32(offset+18,true);
+    const method=view.getUint16(offset+8,true);
+    const fn=new TextDecoder().decode(new Uint8Array(ab,offset+30,fnLen));
+    const dataStart=offset+30+fnLen+extraLen;
+    if(method===0){
+      // Stored
+      files[fn]=new TextDecoder('utf-8').decode(new Uint8Array(ab,dataStart,compSize));
+    } else if(method===8){
+      // Deflate
+      try{
+        const compressed=new Uint8Array(ab,dataStart,compSize);
+        files[fn]=new TextDecoder('utf-8').decode(pako_inflate(compressed));
+      }catch(e){files[fn]='';}
+    }
+    offset=dataStart+compSize;
+  }
+  return files;
+}
+
+function parseSharedStrings(xml){
+  const strs=[];
+  const matches=xml.matchAll(/<si>[\s\S]*?<\/si>/g);
+  for(const m of matches){
+    const texts=m[0].matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g);
+    let val='';
+    for(const t of texts)val+=t[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(n));
+    strs.push(val);
+  }
+  return strs;
+}
+
+function parseSheetNames(xml){
+  if(!xml)return['Sheet1'];
+  const names=[];
+  const matches=xml.matchAll(/name="([^"]+)"/g);
+  for(const m of matches)names.push(m[1]);
+  return names.length?names:['Sheet1'];
+}
+
+function parseWorksheet(xml,shared){
+  const rows=[];
+  const rowMatches=xml.matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g);
+  let headers=null;
+  for(const rm of rowMatches){
+    const cells={};
+    const cellMatches=rm[1].matchAll(/<c r="([A-Z]+)(\d+)"([^>]*)>([\s\S]*?)<\/c>/g);
+    for(const cm of cellMatches){
+      const col=cm[1];const attrs=cm[3];const inner=cm[4];
+      let val='';
+      const vMatch=inner.match(/<v>([\s\S]*?)<\/v>/);
+      if(vMatch){
+        if(attrs.includes('t="s"'))val=shared[parseInt(vMatch[1])]||'';
+        else if(attrs.includes('t="str"'))val=vMatch[1];
+        else val=vMatch[1];
+      }
+      cells[col]=val;
+    }
+    // Convert col letters to 0-based index
+    const rowArr=[];
+    const maxCol=Object.keys(cells).reduce((m,k)=>Math.max(m,colToNum(k)),0);
+    for(let i=0;i<=maxCol;i++){
+      const letter=numToCol(i);
+      rowArr.push(cells[letter]||'');
+    }
+    if(!headers){headers=rowArr;continue;}
+    const obj={};
+    headers.forEach((h,i)=>obj[String(h).trim()]=String(rowArr[i]||'').trim());
+    rows.push(obj);
+  }
+  return rows;
+}
+
+function colToNum(c){let n=0;for(const ch of c)n=n*26+(ch.charCodeAt(0)-64);return n-1;}
+function numToCol(n){let s='';n++;while(n>0){n--;s=String.fromCharCode(65+(n%26))+s;n=Math.floor(n/26);}return s;}
+
+// Pako inflate stub — fall back to empty if not available
+function pako_inflate(data){
+  if(typeof pako!=='undefined')return pako.inflateRaw(data);
+  throw new Error('pako not available');
+}
+
+// ── File reading ─────────────────────────────────────────
+function readFile(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    const isCSV=file.name.toLowerCase().endsWith('.csv');
+    if(isCSV){
+      r.onload=e=>{
+        try{
+          // Try multiple encodings
+          let text=e.target.result;
+          res({'Sheet1':parseCSV(text)});
+        }catch(err){rej(err);}
+      };
+      r.readAsText(file,'UTF-8');
+    } else {
+      r.onload=e=>{
+        try{
+          const result=parseXLSXBinary(e.target.result);
+          res(result.sheets||{'Sheet1':[]});
+        }catch(err){
+          // Fallback: try as text CSV
+          const fr2=new FileReader();
+          fr2.onload=e2=>{try{res({'Sheet1':parseCSV(e2.target.result)});}catch(e3){rej(e3);}};
+          fr2.readAsText(file,'UTF-8');
+        }
+      };
+      r.readAsArrayBuffer(file);
+    }
+  });
+}
+
+function getSheet(sheets){
+  // Return rows from first sheet that has data
+  const names=Object.keys(sheets);
+  for(const n of names){if(sheets[n]&&sheets[n].length>0)return sheets[n];}
+  return[];
+}
+
+function getSheetByName(sheets,name){
+  const key=Object.keys(sheets).find(k=>k.toUpperCase().includes(name.toUpperCase()));
+  return key?sheets[key]:null;
+}
+
+// ── Helpers ───────────────────────────────────────────────
+function exCC(s){if(!s)return null;const m=String(s).match(/^(\d+)/);return m?String(parseInt(m[1],10)):null;}
+function exName(s){if(!s)return'';return String(s).replace(/^\d+\s*/,'').trim().toUpperCase();}
+
+const ENTIDADES_LIST=[
+  'CIUDAD DE MEXICO','CIUDAD DE MÉXICO','BAJA CALIFORNIA SUR','BAJA CALIFORNIA',
+  'MICHOACAN DE OCAMPO','MICHOACÁN DE OCAMPO','VERACRUZ DE IGNACIO DE LA LLAVE',
+  'COAHUILA DE ZARAGOZA','SAN LUIS POTOSI','SAN LUIS POTOSÍ',
+  'NUEVO LEON','NUEVO LEÓN','QUINTANA ROO','GUERRERO','JALISCO','OAXACA',
+  'CHIAPAS','PUEBLA','HIDALGO','TABASCO','VERACRUZ','QUERETARO','QUERÉTARO',
+  'YUCATAN','YUCATÁN','SINALOA','SONORA','CHIHUAHUA','DURANGO','ZACATECAS',
+  'AGUASCALIENTES','COLIMA','CAMPECHE','TLAXCALA','MORELOS','NAYARIT',
+  'TAMAULIPAS','GUANAJUATO','MONTERREY','GUADALAJARA','MEXICO','MÉXICO'
+].sort((a,b)=>b.length-a.length);
+
+function extractEntidad(d){
+  for(const e of ENTIDADES_LIST){if(d.includes(e))return e;}
+  return '';
+}
+
+function inferSeg(d,group){
+  const D=d.toUpperCase().replace(/ENERG\u00cdA/g,'ENERGIA');
+
+  // Extraer TER/ETR
+  const terM=D.match(/(?:TER|ETR)\s*(?:DE\s*)?(\d{1,2}:\d{2}(?:\s*HRS?)?)/);
+  const ter=terM?' TER '+terM[1].trim():'';
+
+  // 1. IMCNOC / Falla Masiva
+  const imcM=D.match(/IMCNOC\s*(\d+)/);
+  const esMasiva=['FALLA MASIVA','FM '].some(x=>D.includes(x));
+  const esCentral=['CENTRAL','NODO'].some(x=>D.includes(x))&&esMasiva;
+  if(imcM||esCentral||esMasiva){
+    if(!imcM&&esCentral) return{seg:'FALLA MASIVA EN CENTRAL EN SEGUIMIENTO POR OBTENER TER'+(ter?' -'+ter:''),tag:'masiva'};
+    if(!imcM&&esMasiva)  return{seg:'FALLA MASIVA ***VALIDAR IMCNOC EN SM***'+(ter?' -'+ter:''),tag:'validar'};
+    const ent=extractEntidad(D);
+    const base='FALLA MASIVA IMCNOC'+imcM[1]+(ent?' '+ent:'');
+    if(['FIBRA','CORTE','CABLE'].some(x=>D.includes(x)))
+      return{seg:base+' CORTE A CABLE DE FIBRA ÓPTICA EN ATENCIÓN POR PERSONAL DE PLANTA EXTERNA'+ter,tag:'masiva'};
+    return{seg:base+' EN DIAGNOSTICO POR PERSONAL DE PLANTA EXTERNA'+ter,tag:'masiva'};
+  }
+
+  // 2. Fibra / Corte
+  if(['FIBRA','CORTE DE F','CORTE A CABLE','CABLE DE FIBRA'].some(x=>D.includes(x)))
+    return{seg:'CORTE A CABLE DE FIBRA ÓPTICA EN ATENCIÓN POR PERSONAL DE PLANTA EXTERNA'+ter,tag:'fibra'};
+
+  // 3. Modem / Modo puente
+  if(['MODEM','MODO PUENTE','CONFIGURACION MODEM','BRIDGE MODE'].some(x=>D.includes(x)))
+    return{seg:'EN REVISIÓN DE MEDIO DE TRANSPORTE ASISTE IDC PARA REVISAR CONFIGURACION MODO PUENTE',tag:'gpon'};
+
+  // 4. Energía
+  if(['ENERGIA','ENERGÍA'].some(x=>D.includes(x))){
+    if(D.includes('UPS')||['DANADO','DA\u00d1ADO'].some(x=>D.includes(x)))
+      return{seg:'FALLA DE ENERGÍA POR UPS GENERAL DA\u00d1ADO',tag:'ups'};
+    if(D.includes('CONFIRMADA'))
+      return{seg:'FALLA DE ENERGÍA CONFIRMADA',tag:'ups'};
+    return{seg:'FALLA DE ENERGÍA CONFIRMADA ***FAVOR DE VALIDAR EN SM***',tag:'validar'};
+  }
+
+  // 5. ONT apagada
+  if(D.includes('ONT')&&['APAGADA','SIN RESPUESTA','SIN POTENCIA','OFF'].some(x=>D.includes(x)))
+    return{seg:'POSIBLE FALLA DE ENERGÍA EN SUCURSAL ***FAVOR DE VALIDAR EN SM***',tag:'validar'};
+
+  // 6. Siniestro / robo
+  if(['SINIESTRO','ROBO','HURTO'].some(x=>D.includes(x)))
+    return{seg:'SUCURSAL VANDALIZADA / SINIESTRO SIN ACCESO',tag:'van'};
+
+  // 7. Radiobase / Telcel
+  if(['RADIOBASE','RADIO BASE','TELCEL','RADIOBAS'].some(x=>D.includes(x)))
+    return{seg:'EN REVISIÓN DE RADIO BASE EN ATENCIÓN POR PERSONAL DE TELCEL'+ter,tag:'lte'};
+
+  // 8. PDT — Pendiente
+  if(['PDT ','PDT\t','PDT REVISIÓN','PDT POR','PENDIENTE POR'].some(x=>D.includes(x))){
+    const gt=getGroupType(group);
+    const b=gt==='lte'?'EN REVISIÓN DE RADIO BASE EN ATENCION POR PERSONAL DE TELCEL':'EN REVISIÓN DE MEDIO DE TRANSPORTE EN ATENCION POR PERSONAL DE PLANTA EXTERNA';
+    return{seg:b+' ***FAVOR DE VALIDAR***'+ter,tag:'validar'};
+  }
+
+  // 9. TX / Transmisiones
+  if(['TRANSMISIONES','TRANSPORTE','PLANTA EXTERNA','SEG TX','SEGUIMIENTO TX'].some(x=>D.includes(x)))
+    return{seg:'EN REVISIÓN DE MEDIO DE TRANSPORTE EN ATENCIÓN CON PERSONAL DE PLANTA EXTERNA'+ter,tag:'gpon'};
+
+  // 10. Sin coincidencia — genérico por tipo de grupo
+  const gt=getGroupType(group);
+  if(gt==='lte')  return{seg:'EN REVISIÓN DE RADIO BASE EN ATENCIÓN POR PERSONAL DE TELCEL ***FAVOR DE VALIDAR***'+ter,tag:'validar'};
+  if(gt==='gpon') return{seg:'EN REVISIÓN DE MEDIO DE TRANSPORTE EN ATENCIÓN CON PERSONAL DE PLANTA EXTERNA ***FAVOR DE VALIDAR***'+ter,tag:'validar'};
+  return null;
+}
+
+
+function hasFibra(d){const s=String(d||'').toUpperCase();return s.includes('FIBRA')||s.includes('CORTE');}
+function getGroupType(g){
+  const s=String(g||'').toUpperCase();
+  if(['LTE','SUCURSAL_LTE'].some(k=>s.includes(k)))return'lte';
+  if(['GPON','RPV','C-01','C-02','C-03','A-31','A-32','C01','C02','C03','A31','A32','SUCURSAL_RPV','SUCURSAL_GPON','SUCURSAL_LEGACY'].some(k=>s.includes(k)))return'gpon';
+  return'other';
+}
+
+// Mapas de columnas ES↔EN
+const COL_MAP={
+  // Incidentes
+  status:     ['status','estatus','estado'],
+  site:       ['site','sitio'],
+  description:['description','descripción','descripcion'],
+  summary:    ['summary','resumen'],
+  open:       ['open time','fecha apertura'],
+  resolved:   ['resolved time','tiempo de resolución','tiempo de resolucion'],
+  close:      ['close time','fecha cierre'],
+  group:      ['group','grupo'],
+  number:     ['number','número','numero'],
+  // Critical WANs
+  wan_site:   ['site','sitio'],
+  wan_group:  ['group','grupo'],
+  wan_name:   ['name','nombre'],
+  wan_status: ['status','estado'],
+};
+
+function kf(obj,name){
+  if(!obj||!Object.keys(obj).length)return name;
+  const targets=COL_MAP[name]||[name];
+  const keys=Object.keys(obj);
+  for(const t of targets){
+    const found=keys.find(k=>k.trim().toLowerCase()===t.toLowerCase());
+    if(found)return found;
+  }
+  // fallback: contains match
+  for(const t of targets){
+    const found=keys.find(k=>k.trim().toLowerCase().includes(t.toLowerCase()));
+    if(found)return found;
+  }
+  return name;
+}
+
+
+// ── Drag & drop setup ─────────────────────────────────────
+
+
+
+// ── TER vencido ──────────────────────────────────────────
+function checkTERVencido(seg){
+  if(!seg)return false;
+  const m=seg.match(/TER\s*(\d{1,2}):(\d{2})/);
+  if(!m)return false;
+  const now=new Date();
+  const terH=parseInt(m[1],10),terM=parseInt(m[2],10);
+  const terMin=terH*60+terM;
+  const nowMin=now.getHours()*60+now.getMinutes();
+  return nowMin>terMin;
+}
+
+// ── Contador tiempo abierto ───────────────────────────────
+function calcTiempo(inicio,fin){
+  if(!inicio||inicio.length<8)return '';
+  try{
+    // Parsear fecha inicio: DD/MM/YY HH:MM o YY/MM/DD HH:MM
+    const parts=inicio.replace('CHECK ','').trim().split(' ');
+    const datePart=parts[0];
+    const timePart=parts[1]||'00:00';
+    const dp=datePart.split('/');
+    if(dp.length<3)return '';
+    let d,m,y;
+    if(parseInt(dp[0],10)<32){d=parseInt(dp[0],10);m=parseInt(dp[1],10);y=2000+parseInt(dp[2],10);}
+    else{y=2000+parseInt(dp[0],10);m=parseInt(dp[1],10);d=parseInt(dp[2],10);}
+    const tp=timePart.split(':');
+    const startDate=new Date(y,m-1,d,parseInt(tp[0],10),parseInt(tp[1]||'0',10));
+    const endDate=fin&&fin.length>4?new Date(fin):new Date();
+    const diffMs=endDate-startDate;
+    if(diffMs<0)return '';
+    const hrs=Math.floor(diffMs/3600000);
+    const mins=Math.floor((diffMs%3600000)/60000);
+    return hrs+'h '+mins.toString().padStart(2,'0')+'m';
+  }catch(e){return '';}
+}
+
+// ── Export XLSX ───────────────────────────────────────────
+function exportXLSX(){
+  if(!rows||!rows.length){showToast('Primero procesa los archivos');return;}
+  // Construir CSV y descargar como Excel-compatible UTF-8 BOM
+  const BOM='﻿';
+  const header=['C.C.','Sucursal','Seguimiento','Inicio','Fin','Tiempo'];
+  const now=new Date();
+  const ts=now.toLocaleDateString('es-MX').replace(/\//g,'-')+'_'+
+    now.getHours().toString().padStart(2,'0')+now.getMinutes().toString().padStart(2,'0');
+  const lines=[header.join('\t')];
+  rows.forEach(r=>{
+    const tiempo=calcTiempo(r.inicio,r.fin);
+    lines.push([r.cc,r.suc,r.seg,r.inicio,r.fin||'',tiempo].map(v=>{
+      const s=String(v||'').replace(/"/g,'""');
+      return s.includes('\t')||s.includes('"')||s.includes('\n')?'"'+s+'"':s;
+    }).join('\t'));
+  });
+  const blob=new Blob([BOM+lines.join('\n')],{type:'text/tab-separated-values;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='Status_WAN_'+ts+'.xls';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('Descargando Excel...');
+}
+
+// SUPABASE
+const SUPA_URL='https://whrfnboqhypusoggvbqv.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndocmZuYm9xaHlwdXNvZ2d2YnF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDkyODYsImV4cCI6MjA5MTQyNTI4Nn0.Z86mWomiz9ScEPYObvL4eXazwcfVXzuAQLelSZEV98I';
+
+async function supaFetch(table,method,body,params){
+  method=method||'GET';
+  const url=SUPA_URL+'/rest/v1/'+table+(params?'?'+params:'');
+  const headers={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+  if(method==='POST')headers['Prefer']='resolution=merge-duplicates';
+  if(method==='POST'&&(table==='vandalizadas'||table==='checks_dia'))headers['on_conflict']='cc';
+  const opts={method,headers};
+  if(body)opts.body=JSON.stringify(body);
+  const r=await fetch(url,opts);
+  if(!r.ok){const t=await r.text();throw new Error(t);}
+  if(method==='DELETE'||r.status===204)return null;
+  const txt=await r.text();
+  return txt?JSON.parse(txt):null;
+}
+function syncOK(msg){const d=document.getElementById('sync-dot'),m=document.getElementById('sync-msg');if(d){d.className='sync-dot ok';m.textContent=msg||'Conectado';}}
+function syncErr(msg){const d=document.getElementById('sync-dot'),m=document.getElementById('sync-msg');if(d){d.className='sync-dot err';m.textContent=msg||'Sin conexion';}}
+function syncLoad(){const d=document.getElementById('sync-dot'),m=document.getElementById('sync-msg');if(d){d.className='sync-dot loading';m.textContent='Sincronizando...';}}
+
+// VANDALIZADAS
+let VAN_MAP={};
+async function vanLoad(){
+  try{
+    syncLoad();
+    const data=await supaFetch('vandalizadas','GET',null,'order=cc.asc');
+    VAN_MAP={};
+    data.forEach(v=>{if(v.cc)VAN_MAP[parseInt(v.cc,10)]={seg:String(v.seg||'').toUpperCase(),inicio:String(v.ini||'')};});
+    vanRender(data);
+    document.getElementById('van-count').textContent=data.length;
+    syncOK('Conectado · '+data.length+' vandalizadas cargadas');
+  }catch(e){syncErr('Sin conexion — verifique internet');vanLoadLocal();}
+}
+function vanLoadLocal(){
+  try{
+    const arr=JSON.parse(localStorage.getItem('cnoc_vandalizadas_v1')||'[]');
+    VAN_MAP={};
+    arr.forEach(v=>{if(v.cc)VAN_MAP[parseInt(v.cc,10)]={seg:String(v.seg||'').toUpperCase(),inicio:String(v.ini||'')};});
+    vanRender(arr);
+    document.getElementById('van-count').textContent=arr.length;
+  }catch(e){VAN_MAP={};}
+}
+function vanRender(arr){
+  const tb=document.getElementById('van-tbody');
+  if(!arr||!arr.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:#adb5bd;font-size:11px;padding:12px">Sin sitios vandalizados</td></tr>';return;}
+  tb.innerHTML=arr.map((v,i)=>`<tr>
+    <td><input class="van-input" value="${v.cc||''}" onchange="vanEdit(${v.cc||i},'cc',this.value)"></td>
+    <td><input class="van-input" value="${v.suc||''}" onchange="vanEdit(${v.cc||i},'suc',this.value)"></td>
+    <td><input class="van-input" value="${v.seg||''}" onchange="vanEdit(${v.cc||i},'seg',this.value)"></td>
+    <td><input class="van-input" value="${v.ini||''}" onchange="vanEdit(${v.cc||i},'ini',this.value)"></td>
+    <td><button class="btn-del" onclick="vanDel(${v.cc||i})">&#x2715;</button></td>
+  </tr>`).join('');
+}
+async function vanAdd(){
+  const cc=document.getElementById('van-new-cc').value.trim();
+  const suc=document.getElementById('van-new-suc').value.trim();
+  const seg=document.getElementById('van-new-seg').value.trim().toUpperCase();
+  const ini=document.getElementById('van-new-ini').value.trim();
+  if(!cc){alert('El C.C. es obligatorio');return;}
+  try{
+    await supaFetch('vandalizadas','POST',{cc:parseInt(cc,10),suc,seg,ini}); // upsert — actualiza si CC ya existe
+    showToast('Vandalizada guardada en servidor');
+    vanLoad();
+  }catch(e){syncErr('Error: '+e.message);}
+  ['van-new-cc','van-new-suc','van-new-seg','van-new-ini'].forEach(id=>document.getElementById(id).value='');
+}
+function vanEdit(cc,field,val){
+  clearTimeout(vanEdit._t);
+  vanEdit._t=setTimeout(async()=>{
+    const row=Array.from(document.querySelectorAll('#van-tbody tr')).find(r=>r.querySelector('input')&&r.querySelector('input').value==cc);
+    if(!row)return;
+    const inp=row.querySelectorAll('input');
+    try{await supaFetch('vandalizadas','POST',{cc:parseInt(inp[0].value,10),suc:inp[1].value,seg:inp[2].value.toUpperCase(),ini:inp[3].value});}
+    catch(e){syncErr('No se pudo guardar');}
+  },700);
+}
+async function vanDel(cc){
+  if(!confirm('Eliminar CC '+cc+'?'))return;
+  try{await supaFetch('vandalizadas','DELETE',null,'cc=eq.'+cc);vanLoad();}
+  catch(e){syncErr('Error eliminando');}
+}
+
+// CHECKS DEL DIA
+async function chkLoad(){
+  try{
+    const data=await supaFetch('checks_dia','GET',null,'order=cc.asc');
+    chkRender(data);
+    document.getElementById('chk-count').textContent=data.length;
+  }catch(e){chkRender([]);}
+}
+function chkGetMap(){
+  const map={};
+  document.querySelectorAll('#chk-tbody tr').forEach(row=>{
+    const cc=parseInt(row.querySelector('strong')&&row.querySelector('strong').textContent||'0',10);
+    const tds=row.querySelectorAll('td');
+    if(!cc||tds.length<4)return;
+    const seg=(tds[2].childNodes[0]&&tds[2].childNodes[0].textContent||'').trim();
+    const hora=(tds[3].textContent||'').trim();
+    if(cc&&seg)map[cc]={seg,hora};
+  });
+  return map;
+}
+function chkRender(arr){
+  const tb=document.getElementById('chk-tbody');
+  if(!arr||!arr.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:#adb5bd;font-size:11px;padding:10px">Sin checks registrados</td></tr>';return;}
+  tb.innerHTML=arr.map(c=>`<tr>
+    <td><strong style="color:#065f46">${c.cc}</strong></td>
+    <td style="font-size:11px">${c.suc||''}</td>
+    <td style="font-size:11px;white-space:normal">${c.seg||''} <span class="chk-badge">CHECK</span></td>
+    <td style="font-size:11px;color:#8492a6">${c.hora||''}</td>
+    <td><button class="btn-del" onclick="chkDel(${c.cc})">&#x2715;</button></td>
+  </tr>`).join('');
+}
+async function chkAdd(){
+  const cc=document.getElementById('chk-new-cc').value.trim();
+  const suc=document.getElementById('chk-new-suc').value.trim();
+  const seg=document.getElementById('chk-new-seg').value.trim().toUpperCase();
+  const now=new Date();
+  const hora=document.getElementById('chk-new-hora').value.trim()||
+    now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const fecha=now.toLocaleDateString('es-MX');
+  if(!cc){alert('El C.C. es obligatorio');return;}
+  if(!seg){alert('El seguimiento es obligatorio');return;}
+  try{
+    await supaFetch('checks_dia','POST',{cc:parseInt(cc,10),suc,seg,hora,fecha});
+    showToast('Check guardado para todo el equipo');
+    chkLoad();
+  }catch(e){syncErr('Error: '+e.message);}
+  ['chk-new-cc','chk-new-suc','chk-new-seg','chk-new-hora'].forEach(id=>document.getElementById(id).value='');
+}
+async function chkDel(cc){
+  try{await supaFetch('checks_dia','DELETE',null,'cc=eq.'+cc);chkLoad();}
+  catch(e){syncErr('Error eliminando check');}
+}
+async function chkClear(){
+  if(!confirm('Limpiar TODOS los checks del dia para todo el equipo?'))return;
+  try{
+    await supaFetch('checks_dia','DELETE',null,'cc=gt.0');
+    chkRender([]);document.getElementById('chk-count').textContent='0';
+    showToast('Checks limpiados');
+  }catch(e){syncErr('Error limpiando');}
+}
+
+// HISTORIAL (solo local)
+const HIST_KEY='cnoc_historial_v1';
+function histSave(){
+  if(!rows.length){showToast('Primero procesa los archivos');return;}
+  const now=new Date();
+  const hora=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const snap={hora,rows:rows.map(r=>({cc:r.cc,suc:r.suc,seg:r.seg}))};
+  localStorage.setItem(HIST_KEY,JSON.stringify(snap));
+  document.getElementById('hist-badge').textContent='Guardado: '+hora;
+  document.getElementById('hist-badge').style.display='inline-block';
+  document.getElementById('hist-badge').className='hist-badge saved';
+  document.getElementById('btn-compare').style.display='inline-block';
+  showToast('Corte de las '+hora+' guardado');
+}
+function histCompare(){
+  const raw=localStorage.getItem(HIST_KEY);
+  if(!raw){showToast('No hay corte anterior');return;}
+  if(!rows.length){showToast('Primero procesa los archivos actuales');return;}
+  const prev=JSON.parse(raw);
+  const pm={};prev.rows.forEach(r=>pm[r.cc]=r);
+  const cm={};rows.forEach(r=>cm[r.cc]=r);
+  const nuevos=rows.filter(r=>!pm[r.cc]);
+  const salieron=prev.rows.filter(r=>!cm[r.cc]);
+  const cambiaron=rows.filter(r=>pm[r.cc]&&pm[r.cc].seg!==r.seg);
+  const iguales=rows.filter(r=>pm[r.cc]&&pm[r.cc].seg===r.seg);
+  document.getElementById('modal-title').textContent=
+    'Corte '+prev.hora+' vs actual · +'+nuevos.length+' nuevos · -'+salieron.length+' salieron · ~'+cambiaron.length+' cambiaron';
+  const rH=(r,cls,b)=>'<tr class="'+cls+'"><td><b>'+r.cc+'</b></td><td style="font-size:10px">'+r.suc+'</td><td style="font-size:10px;white-space:normal">'+(r.seg||'—')+b+'</td></tr>';
+  document.getElementById('cmp-grid').innerHTML=
+    '<div><h4 style="font-size:11px;font-weight:700;color:#1B3A5C;text-transform:uppercase;margin-bottom:.5rem">Corte anterior ('+prev.hora+') — '+prev.rows.length+' sitios</h4>'+
+    '<table class="cmp-table"><thead><tr><th>C.C.</th><th>Sucursal</th><th>Seguimiento</th></tr></thead><tbody>'+
+    salieron.map(r=>rH(r,'cmp-gone','<b style="font-size:9px;color:#c0392b"> SALIO</b>')).join('')+
+    cambiaron.map(r=>rH(pm[r.cc],'cmp-changed','')).join('')+
+    iguales.map(r=>rH(r,'','')).join('')+
+    '</tbody></table></div>'+
+    '<div><h4 style="font-size:11px;font-weight:700;color:#1B3A5C;text-transform:uppercase;margin-bottom:.5rem">Corte actual — '+rows.length+' sitios</h4>'+
+    '<table class="cmp-table"><thead><tr><th>C.C.</th><th>Sucursal</th><th>Seguimiento</th></tr></thead><tbody>'+
+    nuevos.map(r=>rH(r,'cmp-new','<b style="font-size:9px;color:#065f46"> NUEVO</b>')).join('')+
+    cambiaron.map(r=>rH(r,'cmp-changed','<b style="font-size:9px;color:#92400e"> CAMBIO</b>')).join('')+
+    iguales.map(r=>rH(r,'','')).join('')+
+    '</tbody></table></div>';
+  document.getElementById('modal-compare').classList.add('show');
+}
+
+
+// ── Import vandalizadas desde pegado de Excel ────────────
+function vanImportPaste(){
+  const raw=document.getElementById('van-paste-area').value.trim();
+  const resultEl=document.getElementById('paste-result');
+  if(!raw){resultEl.textContent='Nada que importar';return;}
+
+  const lines=raw.split('\n').filter(l=>l.trim());
+  let imported=0,skipped=0;
+  const toUpsert=[];
+  for(const line of lines){
+    const cols=line.split('\t').length>1?line.split('\t'):line.split(';');
+    if(cols.length<1)continue;
+    const cc=String(cols[0]||'').trim().replace(/\D/g,'');
+    if(!cc){skipped++;continue;}
+    const suc=String(cols[1]||'').trim();
+    const seg=String(cols[2]||'').trim().toUpperCase();
+    const ini=String(cols[3]||'').trim();
+    toUpsert.push({cc:parseInt(cc,10),suc,seg,ini});
+    imported++;
+  }
+
+  // Upsert uno por uno — Supabase actualiza si CC ya existe
+  const savePromises=toUpsert.map(v=>
+    supaFetch('vandalizadas','POST',v).catch(e=>{
+      console.warn('Error upsert CC '+v.cc+':',e.message);
+      return null;
+    })
+  );
+
+  Promise.all(savePromises).then(()=>{
+    vanLoad();
+    resultEl.textContent='✓ '+imported+' filas importadas'+(skipped?' ('+skipped+' omitidas)':'');
+    document.getElementById('van-paste-area').value='';
+    setTimeout(()=>{resultEl.textContent='';},4000);
+  });
+}
+
+// Helper vanGetArr — lee desde localStorage como respaldo
+function vanGetArr(){
+  // Leer filas actuales del DOM
+  const rows=[];
+  document.querySelectorAll('#van-tbody tr').forEach(row=>{
+    const inputs=row.querySelectorAll('input');
+    if(inputs.length>=4){
+      const cc=inputs[0].value.trim();
+      if(cc)rows.push({cc,suc:inputs[1].value.trim(),seg:inputs[2].value.trim(),ini:inputs[3].value.trim()});
+    }
+  });
+  return rows;
+}
+
+// Inicializar
+vanLoad();
+chkLoad();
+
+function setupDZ(dzId,inputId,onFile){
+  const dz=document.getElementById(dzId),fi=document.getElementById(inputId);
+  fi.addEventListener('change',e=>{if(e.target.files[0])onFile(e.target.files[0],dz);});
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');if(e.dataTransfer.files[0])onFile(e.dataTransfer.files[0],dz);});
+}
+function markDone(dz,name){dz.classList.remove('over');dz.classList.add('done');dz.querySelector('.dz-label').textContent=name;dz.querySelector('.dz-sub').textContent='Cargado — clic para cambiar';}
+function checkReady(){document.getElementById('btn-run').disabled=!(fileInc&&fileWan);}
+
+setupDZ('dz-inc','fi-inc',(f,dz)=>{fileInc=f;markDone(dz,f.name);checkReady();});
+setupDZ('dz-wan','fi-wan',(f,dz)=>{fileWan=f;markDone(dz,f.name);checkReady();});
+
+// ── Main process ──────────────────────────────────────────
+async function run(){
+  const btn=document.getElementById('btn-run'),errEl=document.getElementById('err-box');
+  btn.disabled=true;btn.textContent='Procesando...';errEl.style.display='none';
+  try{
+    const[incSheets,wanSheets]=await Promise.all([readFile(fileInc),readFile(fileWan)]);
+    const inc=getSheet(incSheets),wan=getSheet(wanSheets);
+    if(!inc.length)throw new Error('No se encontraron datos en el archivo de Incidentes');
+    if(!wan.length)throw new Error('No se encontraron datos en el archivo de Critical WANs');
+
+    const sK=kf(inc[0],'status'),siK=kf(inc[0],'site');
+    const dK=kf(inc[0],'description'),sumK=kf(inc[0],'summary');
+    const tK=kf(inc[0],'open'),rtK=kf(inc[0],'resolved');
+    const swK=kf(wan[0],'site'),gK=kf(wan[0],'wan_group');
+
+    const incMap={};
+    for(const r of inc){
+      const st=String(r[sK]||'').trim().toUpperCase();
+      const cc=exCC(r[siK]);
+      if(!cc)continue;
+      // Combinar description + summary para máxima info
+      const desc=String(r[dK]||'').trim();
+      const summ=String(r[sumK]||'').trim();
+      const combined=desc+(summ&&summ!==desc?' || '+summ:'');
+      const resolvedTime=String(r[rtK]||'').trim();
+      // Detectar si está activo/resuelto
+      const isActivo=['ACTIVO','SERVICIO ACTIVO','ACTIVE'].some(x=>
+        desc.toUpperCase().includes(x)||summ.toUpperCase().includes(x));
+      if(!incMap[cc]){
+        incMap[cc]={
+          desc:combined,
+          time:String(r[tK]||'').trim(),
+          status:st,
+          resolvedTime:resolvedTime,
+          isActivo:isActivo
+        };
+      }
+    }
+
+    const chkMap=chkGetMap();
+    rows=[];
+    for(const r of wan){
+      const cc=exCC(r[swK]);if(!cc)continue;
+      const ccN=parseInt(cc,10),suc=exName(r[swK]),group=String(r[gK]||'');
+      const inc_r=incMap[cc]||null;
+      const isVan=ccN in VAN_MAP;
+      const myChk=chkMap[ccN]||null;
+      let seg='',inicio='',fin='',tag='none';
+
+      if(myChk){
+        seg=myChk.seg;
+        inicio=myChk.hora?('CHECK '+myChk.hora):(inc_r?inc_r.time:'');
+        tag='check';
+      } else if(isVan){
+        seg=VAN_MAP[ccN].seg||'';
+        inicio=VAN_MAP[ccN].inicio||'';
+        tag='van';
+      } else if(inc_r){
+        inicio=inc_r.time;
+        // Si está activo con tiempo de resolución → marcar como ACTIVO
+        if(inc_r.isActivo&&inc_r.resolvedTime){
+          seg='ACTIVO ***FAVOR DE VALIDAR***';
+          fin=inc_r.resolvedTime;
+          tag='activo';
+        } else {
+          const inf=inferSeg(inc_r.desc,group);
+          if(inf){seg=inf.seg;tag=inf.tag;}
+          else{
+            const gt=getGroupType(group);
+            seg=gt==='lte'?SEG_LTE:gt==='gpon'?SEG_GPON:'';
+            tag=gt==='lte'?'lte':'gpon';
+          }
+        }
+      } else {
+        const t=getGroupType(group);
+        if(t==='lte'){seg=SEG_LTE;tag='lte';}
+        else if(t==='gpon'){seg=SEG_GPON;tag='gpon';}
+      }
+      rows.push({cc,ccN,suc,seg,inicio,fin,isVan,hasInc:!!inc_r,tag});
+    }
+    rows.sort((a,b)=>a.ccN-b.ccN);
+    renderResults();
+  }catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
+  btn.disabled=false;btn.textContent='Procesar y cruzar archivos';
+}
+
+const TL={gpon:'GPON/RPV',lte:'LTE',fibra:'FIBRA',van:'VANDALIZADA',masiva:'FALLA MASIVA',ups:'ENERGIA/UPS',validar:'VALIDAR',activo:'ACTIVO',check:'MI CHECK'};
+const TC={gpon:'tg',lte:'tl',fibra:'tf',van:'tv',masiva:'tf',ups:'tl',validar:'tv',activo:'tg',check:'tg'};
+
+function renderResults(){
+  const vanC=rows.filter(r=>r.isVan).length;
+  const incC=rows.filter(r=>r.hasInc&&!r.isVan&&r.tag!=='check').length;
+  const chkC=rows.filter(r=>r.tag==='check').length;
+  const valC=rows.filter(r=>r.seg&&r.seg.includes('VALIDAR')).length;
+  const autoC=rows.filter(r=>!r.hasInc&&!r.isVan&&r.seg&&r.tag!=='check').length;
+  const sinC=rows.filter(r=>!r.seg&&!r.isVan&&r.tag!=='check').length;
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val">${rows.length}</div></div>
+    <div class="stat"><div class="stat-lbl">Con incidente</div><div class="stat-val g">${incC}</div></div>
+    <div class="stat"><div class="stat-lbl">Vandalizadas</div><div class="stat-val r">${vanC}</div></div>
+    ${chkC?`<div class="stat"><div class="stat-lbl">Mis checks</div><div class="stat-val" style="color:#065f46">${chkC}</div></div>`:''}
+    <div class="stat"><div class="stat-lbl">&#x26A0; Validar</div><div class="stat-val" style="color:#92400e">${valC}</div></div>
+    <div class="stat"><div class="stat-lbl">Sin incidente</div><div class="stat-val">${sinC}</div></div>`;
+
+  document.getElementById('tb').innerHTML=rows.map((r,i)=>{
+    const isVal=r.seg&&r.seg.includes('VALIDAR');
+    const rc=r.tag==='check'?'chk':r.isVan?'van':isVal?'validar':r.hasInc?'inc':r.tag==='gpon'?'ag':r.tag==='lte'?'al':(i%2===0?'alt':'');
+    const tl=TL[r.tag]||'',tc=TC[r.tag]||'';
+    const sh=r.seg?(r.seg+(tl?`<br><span class="tag ${tc}">${tl}</span>`:'')):('<span class="pend">pendiente</span>');
+    const finHtml=r.fin?`<span style='color:#085041;font-weight:600'>${r.fin}</span>`:'—';
+    return`<tr class="${rc}"><td>${r.cc}</td><td style="white-space:normal;font-size:11px">${r.suc}</td><td class="seg">${sh}</td><td style="font-size:10px;font-family:monospace">${r.inicio}</td><td style="font-size:10px;font-family:monospace">${finHtml}</td></tr>`;
+  }).join('');
+  document.getElementById('results').style.display='block';
+  document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function cp(mode){
+  const txt=mode==='base'
+    ?rows.map(r=>`${r.cc}\t${r.suc}`).join('\n')
+    :rows.map(r=>[r.cc,r.suc,'',r.seg,'',r.inicio,r.fin||''].join('\t')).join('\n');
+  navigator.clipboard.writeText(txt).then(()=>showToast(mode==='base'?'C.C. + Sucursal copiado':'Copiado — pega en tu Sheet'));
+}
+
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+function reset(){
+  fileInc=null;fileWan=null;rows=[];
+  [['dz-inc','fi-inc','Incidentes','Excel o CSV — Service Manager'],
+   ['dz-wan','fi-wan','Critical WANs','Excel o CSV — Telmex Control Center'],
+  ].forEach(([dId,fId,t,s])=>{
+    const dz=document.getElementById(dId);dz.classList.remove('done');
+    dz.querySelector('.dz-label').textContent=t;dz.querySelector('.dz-sub').textContent=s;
+    document.getElementById(fId).value='';
+  });
+  document.getElementById('results').style.display='none';
+  document.getElementById('err-box').style.display='none';
+  document.getElementById('btn-run').disabled=true;
+  const ib=document.getElementById('info-box');
+  ib.textContent='Listo para procesar. Sube el Catálogo Telmex para máxima cobertura de entidades y vandalizadas con fechas.';
+  ib.className='info-box';
+}
+</script>
+</body>
+</html>
+
+
