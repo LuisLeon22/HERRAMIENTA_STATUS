@@ -69,7 +69,7 @@ header small{font-size:11px;opacity:.55;display:block}
 .tw{border:1px solid #dde2ea;border-radius:8px;overflow:hidden;max-height:480px;overflow-y:auto}
 table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
 thead th{background:#1B3A5C;color:#fff;padding:8px 10px;text-align:left;font-weight:500;font-size:10px;letter-spacing:.05em;position:sticky;top:0;z-index:2}
-th:nth-child(1){width:55px}th:nth-child(2){width:160px}th:nth-child(3){width:auto}th:nth-child(4){width:125px}th:nth-child(5){width:125px}
+th:nth-child(1){width:52px}th:nth-child(2){width:140px}th:nth-child(3){width:62px}th:nth-child(4){width:auto}th:nth-child(5){width:115px}th:nth-child(6){width:115px}
 tbody tr:nth-child(even) td{filter:brightness(.985)}
 tbody td{padding:7px 10px;border-bottom:1px solid #f0f2f5;vertical-align:top;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 tbody td:first-child{font-weight:600;color:#4a6785}
@@ -137,6 +137,10 @@ tr.chk td:first-child{color:#065f46}
 .cmp-table th{background:#f0f2f5;padding:5px 8px;text-align:left;font-size:10px;color:#8492a6;font-weight:500}
 .cmp-table td{padding:5px 8px;border-bottom:1px solid #f5f5f5}
 .cmp-new{background:#e1f5ee}.cmp-gone{background:#fef0ef}.cmp-changed{background:#fff8e1}
+
+.badge-medio{display:inline-block;font-size:9px;padding:2px 7px;border-radius:3px;font-weight:700;white-space:nowrap}
+.badge-gpon{background:#dbeafe;color:#1e40af}
+.badge-lte{background:#fef3c7;color:#92400e}
 
 /* TER vencido */
 tr.ter-vencido td{background:#fff3e0}
@@ -255,7 +259,7 @@ tr.ter-vencido td:first-child{color:#e65100}
     <div class="tw">
       <table>
         <thead><tr>
-          <th>C.C.</th><th>Sucursal</th><th>Seguimiento</th><th>Inicio</th><th>Fin</th><th style="width:70px">Tiempo</th>
+          <th>C.C.</th><th>Sucursal</th><th>Medio</th><th>Seguimiento</th><th>Inicio</th><th>Fin</th><th style="width:70px">Tiempo</th>
         </tr></thead>
         <tbody id="tb"></tbody>
       </table>
@@ -1028,7 +1032,8 @@ async function run(){
         if(t==='lte'){seg=SEG_LTE;tag='lte';}
         else if(t==='gpon'){seg=SEG_GPON;tag='gpon';}
       }
-      rows.push({cc,ccN,suc,seg,inicio,fin,isVan,hasInc:!!inc_r,tag});
+      const medio=getGroupType(group)==='lte'?'LTE':'GPON/RPV';
+      rows.push({cc,ccN,suc,seg,inicio,fin,isVan,hasInc:!!inc_r,tag,medio});
     }
     rows.sort((a,b)=>a.ccN-b.ccN);
     renderResults();
@@ -1060,7 +1065,8 @@ function renderResults(){
     const tl=TL[r.tag]||'',tc=TC[r.tag]||'';
     const sh=r.seg?(r.seg+(tl?`<br><span class="tag ${tc}">${tl}</span>`:'')):('<span class="pend">pendiente</span>');
     const finHtml=r.fin?`<span style='color:#085041;font-weight:600'>${r.fin}</span>`:'—';
-    return`<tr class="${rc}"><td>${r.cc}</td><td style="white-space:normal;font-size:11px">${r.suc}</td><td class="seg">${sh}</td><td style="font-size:10px;font-family:monospace">${r.inicio}</td><td style="font-size:10px;font-family:monospace">${finHtml}</td></tr>`;
+    const medioCls=r.medio==='LTE'?'badge-lte':'badge-gpon';
+    return`<tr class="${rc}"><td>${r.cc}</td><td style="white-space:normal;font-size:11px">${r.suc}</td><td style="text-align:center"><span class="badge-medio ${medioCls}">${r.medio||''}</span></td><td class="seg">${sh}</td><td style="font-size:10px;font-family:monospace">${r.inicio}</td><td style="font-size:10px;font-family:monospace">${finHtml}</td></tr>`;
   }).join('');
   document.getElementById('results').style.display='block';
   document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
@@ -1069,7 +1075,7 @@ function renderResults(){
 function cp(mode){
   const txt=mode==='base'
     ?rows.map(r=>`${r.cc}\t${r.suc}`).join('\n')
-    :rows.map(r=>[r.cc,r.suc,'',r.seg,'',r.inicio,r.fin||''].join('\t')).join('\n');
+    :rows.map(r=>[r.cc,r.suc,'',r.seg,r.medio,'',r.inicio,r.fin||''||''].join('\t')).join('\n');
   navigator.clipboard.writeText(txt).then(()=>showToast(mode==='base'?'C.C. + Sucursal copiado':'Copiado — pega en tu Sheet'));
 }
 
@@ -1094,5 +1100,3 @@ function reset(){
 </script>
 </body>
 </html>
-
-
