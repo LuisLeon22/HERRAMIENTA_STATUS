@@ -272,6 +272,7 @@ tr.ter-vencido td:first-child{color:#e65100}
     </div>
     <div class="actions">
       <button class="btn btn-p" onclick="cp('all')">Copiar todo para Sheet</button>
+      <button class="btn btn-p" onclick="openWarroom()">&#x1F4CB; Status Warroom</button>
       <button class="btn-nuevo" onclick="reset()">&#x21BA; Nuevo proceso</button>
     </div>
   </div>
@@ -290,6 +291,20 @@ tr.ter-vencido td:first-child{color:#e65100}
         <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#fff8e1;border:1px solid #EF9F27;margin-right:3px"></span>Cambio</span>
       </div>
       <div class="cmp-grid" id="cmp-grid"></div>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-warroom">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>Status Warroom</h3>
+      <button class="modal-close" onclick="document.getElementById('modal-warroom').classList.remove('show')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <textarea id="warroom-text" spellcheck="false" style="width:100%;min-height:440px;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.45;padding:12px;border:1px solid #dde2ea;border-radius:8px;resize:vertical;white-space:pre"></textarea>
+      <div style="margin-top:.75rem;text-align:right">
+        <button class="btn btn-p" onclick="copyWarroom()">Copiar texto</button>
+      </div>
     </div>
   </div>
 </div>
@@ -614,6 +629,7 @@ const COL_MAP={
   wan_group:  ['group','grupo'],
   wan_name:   ['name','nombre'],
   wan_status: ['status','estado'],
+  wan_degraded:['degraded from','degradado desde','degraded'],
 };
 
 function kf(obj,name){
@@ -967,7 +983,7 @@ async function run(){
     const sK=kf(inc[0],'status'),siK=kf(inc[0],'site');
     const dK=kf(inc[0],'description'),sumK=kf(inc[0],'summary');
     const tK=kf(inc[0],'open'),rtK=kf(inc[0],'resolved');
-    const swK=kf(wan[0],'site'),gK=kf(wan[0],'wan_group');
+    const swK=kf(wan[0],'site'),gK=kf(wan[0],'wan_group'),dfK=kf(wan[0],'wan_degraded');
 
     const incMap={};
     for(const r of inc){
@@ -998,6 +1014,7 @@ async function run(){
     for(const r of wan){
       const cc=exCC(r[swK]);if(!cc)continue;
       const ccN=parseInt(cc,10),suc=exName(r[swK]),group=String(r[gK]||'');
+      const degradedFrom=String(r[dfK]||'').trim();
       const inc_r=incMap[cc]||null;
       const isVan=ccN in VAN_MAP;
       const myChk=chkMap[ccN]||null;
@@ -1033,7 +1050,7 @@ async function run(){
         else if(t==='gpon'){seg=SEG_GPON;tag='gpon';}
       }
       const medio=getGroupType(group)==='lte'?'LTE':'GPON/RPV';
-      rows.push({cc,ccN,suc,seg,inicio,fin,isVan,hasInc:!!inc_r,tag,medio});
+      rows.push({cc,ccN,suc,seg,inicio,fin,isVan,hasInc:!!inc_r,tag,medio,degradedFrom,desc:inc_r?inc_r.desc:''});
     }
     rows.sort((a,b)=>a.ccN-b.ccN);
     renderResults();
@@ -1075,11 +1092,117 @@ function renderResults(){
 function cp(mode){
   const txt=mode==='base'
     ?rows.map(r=>`${r.cc}\t${r.suc}`).join('\n')
-    :rows.map(r=>[r.cc,r.suc,'',r.seg,r.medio,'',r.inicio,r.fin||''||''].join('\t')).join('\n');
+    :rows.map(r=>[r.cc,r.suc,'',r.seg,r.medio,'',r.inicio,r.fin||'',r.degradedFrom||''].join('\t')).join('\n');
   navigator.clipboard.writeText(txt).then(()=>showToast(mode==='base'?'C.C. + Sucursal copiado':'Copiado — pega en tu Sheet'));
 }
 
 function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// ── Status Warroom (texto cliente) ─────────────────────────
+const MESES_ES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+function buildWarroomText(){
+  const now = new Date();
+  const dia = now.getDate();
+  const mes = MESES_ES[now.getMonth()];
+  const mesCap = mes.charAt(0).toUpperCase() + mes.slice(1);
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+
+  const tx = [], telcel = [], energia = [], masiva = [];
+
+  for(const r of rows){
+    if(!r.seg) continue;               // con servicio, sin novedad
+
+    const segU = (r.seg || '').toUpperCase();
+    const descU = (r.desc || '').toUpperCase();
+    const combo = segU + ' ' + descU;
+
+    // Casos de energía con texto amigable ya establecido
+    const isEnergiaConfirmada = r.tag === 'ups';
+    const isEnergiaOnt = r.tag === 'validar' && segU.startsWith('POSIBLE FALLA DE ENERGÍA');
+    const isEnergiaPosible = r.tag === 'validar' && !isEnergiaOnt && (segU.includes('ENERGÍA') || segU.includes('ENERGIA'));
+
+    if(isEnergiaConfirmada){ energia.push({cc: r.cc, suc: r.suc, seg: r.seg}); continue; }
+    if(isEnergiaOnt){ energia.push({cc: r.cc, suc: r.suc, seg: 'ALARMA DE ONT APAGADA EN PROCESO DE CHECKLIST'}); continue; }
+    if(isEnergiaPosible){ energia.push({cc: r.cc, suc: r.suc, seg: 'POSIBLE FALLA DE ENERGÍA EN PROCESO DE CHECKLIST'}); continue; }
+
+    // Resto de sitios (validar genérico, activo, checks manuales, gpon/lte/fibra/van, etc.)
+    // se clasifican con apoyo de summary/description cuando el seguimiento no es concluyente
+    if(r.tag === 'masiva' || combo.includes('MASIVA') || combo.includes('IMCNOC')){
+      masiva.push({cc: r.cc, suc: r.suc, seg: r.seg}); continue;
+    }
+    if(combo.includes('ENERGIA') || combo.includes('ENERGÍA') || combo.includes('UPS')){
+      energia.push({cc: r.cc, suc: r.suc, seg: r.seg}); continue;
+    }
+    if(r.tag === 'lte' || combo.includes('TELCEL') || combo.includes('RADIO BASE') || combo.includes('RADIOBASE')){
+      telcel.push({cc: r.cc, suc: r.suc, seg: r.seg}); continue;
+    }
+    if(r.tag === 'gpon' || r.tag === 'fibra' || combo.includes('TRANSMISIONES') || combo.includes('TRANSPORTE') || combo.includes('PLANTA EXTERNA') || combo.includes('FIBRA')){
+      tx.push({cc: r.cc, suc: r.suc, seg: r.seg}); continue;
+    }
+
+    // Sin señal clara (p.ej. ACTIVO ***FAVOR DE VALIDAR***, check manual) → fallback por medio
+    if(r.medio === 'LTE') telcel.push({cc: r.cc, suc: r.suc, seg: r.seg});
+    else tx.push({cc: r.cc, suc: r.suc, seg: r.seg});
+  }
+
+  const total = tx.length + telcel.length + energia.length + masiva.length;
+
+  // Función interna para acortar las frases únicamente en el texto del Warroom
+  function simplificarStatus(texto) {
+    if (!texto) return '';
+    return texto
+      .replace(/EN REVISIÓN DE RADIO BASE EN ATENCIÓN POR PERSONAL DE TELCEL/g, 'EN SEGUIMIENTO CON TELCEL')
+      .replace(/EN REVISIÓN DE MEDIO DE TRANSPORTE EN ATENCIÓN CON PERSONAL DE PLANTA EXTERNA/g, 'EN SEGUIMIENTO CON TRANSMISIONES')
+      .replace(/CORTE A CABLE DE FIBRA ÓPTICA EN ATENCIÓN POR PERSONAL DE PLANTA EXTERNA/g, 'CORTE DE FIBRA ÓPTICA')
+      .replace(/\s*\*\*\*FAVOR DE VALIDAR EN SM\*\*\*/g, '')
+      .replace(/\s*\*\*\*FAVOR DE VALIDAR\*\*\*/g, '');
+  }
+
+  function fmtLine(it){
+    let seg = simplificarStatus(it.seg || '').trim();
+    if(seg && !/[.!]$/.test(seg)) seg += '.';
+    return `*${it.cc}* ${it.suc}\n${seg}\n`;
+  }
+  
+  function block(list){ return list.length ? list.map(fmtLine).join('\n') + '\n' : ''; }
+
+  let out = '';
+  out += 'Buen Día, Se envía corte para Banco del Bienestar - WARROOM\n';
+  out += `Estatus ${dia} de ${mesCap} ${hh}:00 Hrs\n`;
+  out += '--------------------------------------------\n';
+  out += 'SUCURSALES SIN SERVICIO\n';
+  out += `Total: ${total}   Suc. Sin Servicio\n`;
+  out += `*${tx.length}\tSuc. Seguimiento TX\n`;
+  out += `*${telcel.length}\tSuc. Seguimiento Telcel\n`;
+  out += `*${energia.length}\tSuc. Falla Energía\n`;
+  out += `*${masiva.length}\tMasiva\n`;
+  out += '---------------\n';
+  out += `🔴 SEGUIMIENTO CON TX: ${tx.length}\n`;
+  out += block(tx);
+  out += '------------------------------\n';
+  out += `🔵 SEGUIMIENTO CON TELCEL: ${telcel.length}\n`;
+  out += block(telcel);
+  out += '---------------------------------\n';
+  out += `🟠 FALLA DE ENERGÍA: ${energia.length}\n`;
+  out += block(energia);
+  out += '---------------------------------\n';
+  out += `🟡 FALLAS MASIVAS: ${masiva.length}\n`;
+  out += block(masiva);
+
+  return out.replace(/\n+$/, '\n');
+}
+
+function openWarroom(){
+  document.getElementById('warroom-text').value=buildWarroomText();
+  document.getElementById('modal-warroom').classList.add('show');
+}
+function copyWarroom(){
+  const t=document.getElementById('warroom-text');
+  t.select();
+  navigator.clipboard.writeText(t.value).then(()=>showToast('Status Warroom copiado'));
+}
 
 function reset(){
   fileInc=null;fileWan=null;rows=[];
