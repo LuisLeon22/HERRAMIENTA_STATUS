@@ -1109,7 +1109,7 @@ function buildWarroomText(){
   const hh = String(now.getHours()).padStart(2, '0');
   const mm = String(now.getMinutes()).padStart(2, '0');
 
-  const tx = [], telcel = [], energia = [], masiva = [];
+  const tx = [], telcel = [], energia = [], masiva = [], cliente = [];
 
   for(const r of rows){
     if(!r.seg) continue;               // con servicio, sin novedad
@@ -1127,7 +1127,11 @@ function buildWarroomText(){
     if(isEnergiaOnt){ energia.push({cc: r.cc, suc: r.suc, seg: 'ALARMA DE ONT APAGADA EN PROCESO DE CHECKLIST'}); continue; }
     if(isEnergiaPosible){ energia.push({cc: r.cc, suc: r.suc, seg: 'POSIBLE FALLA DE ENERGÍA EN PROCESO DE CHECKLIST'}); continue; }
 
-    // Resto de sitios (validar genérico, activo, checks manuales, gpon/lte/fibra/van, etc.)
+    // Sitios con status fijo *temporal* (tabla de vandalizadas) y cualquier sitio que el
+    // cruce detecte como vandalizada/siniestrada por su descripción → acceso pendiente de cliente
+    if(r.tag === 'van'){ cliente.push({cc: r.cc, suc: r.suc, seg: r.seg}); continue; }
+
+    // Resto de sitios (validar genérico, activo, checks manuales, gpon/lte/fibra, etc.)
     // se clasifican con apoyo de summary/description cuando el seguimiento no es concluyente
     if(r.tag === 'masiva' || combo.includes('MASIVA') || combo.includes('IMCNOC')){
       masiva.push({cc: r.cc, suc: r.suc, seg: r.seg}); continue;
@@ -1147,7 +1151,7 @@ function buildWarroomText(){
     else tx.push({cc: r.cc, suc: r.suc, seg: r.seg});
   }
 
-  const total = tx.length + telcel.length + energia.length + masiva.length;
+  const total = tx.length + telcel.length + energia.length + masiva.length + cliente.length;
 
   // Función interna para acortar las frases únicamente en el texto del Warroom
   function simplificarStatus(texto) {
@@ -1178,6 +1182,7 @@ function buildWarroomText(){
   out += `*${telcel.length}\tSuc. Seguimiento Telcel\n`;
   out += `*${energia.length}\tSuc. Falla Energía\n`;
   out += `*${masiva.length}\tMasiva\n`;
+  out += `*${cliente.length}\tAcceso pendiente por cliente\n`;
   out += '---------------\n';
   out += `🔴 SEGUIMIENTO CON TX: ${tx.length}\n`;
   out += block(tx);
@@ -1190,6 +1195,9 @@ function buildWarroomText(){
   out += '---------------------------------\n';
   out += `🟡 FALLAS MASIVAS: ${masiva.length}\n`;
   out += block(masiva);
+  out += '---------------------------------\n';
+  out += `🔴 ACCESO PENDIENTE DEL LADO DEL CLIENTE: ${cliente.length}\n`;
+  out += block(cliente);
 
   return out.replace(/\n+$/, '\n');
 }
