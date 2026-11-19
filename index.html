@@ -1059,7 +1059,7 @@ function buildWarroomText(){
   out += `*${telcel.length}\tSuc. Seguimiento Telcel 📡\n`;
   out += `*${energia.length}\tSuc. Falla Energía 🔌\n`;
   out += `*${masiva.length}\tMasiva ⚡\n`;
-  out += `*${cliente.length}\tSitios sin acceso por siniestro o falta de personal 🏦\n`;
+  out += `*${cliente.length}\tSitios sin acceso por siniestro, falla de UPS gral. o falta de personal 🏦\n`;
   out += '---------------\n';
   out += `👨🏻‍🔧 SEGUIMIENTO CON TX: ${tx.length}\n`;
   out += block(tx, 'tx');
@@ -1073,7 +1073,7 @@ function buildWarroomText(){
   out += `⚡ FALLAS MASIVAS: ${masiva.length}\n`;
   out += block(masiva);
   out += '---------------------------------\n';
-  out += `🏦 SITIOS SIN ACCESO POR SINIESTRO O FALTA DE PERSONAL: ${cliente.length}\n`;
+  out += `🏦 SITIOS SIN ACCESO POR SINIESTRO, FALLA DE UPS GRAL. O FALTA DE PERSONAL: ${cliente.length}\n`;
   out += block(cliente);
 
   return out.replace(/\n+$/, '\n');
