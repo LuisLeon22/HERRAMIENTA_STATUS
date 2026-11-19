@@ -104,7 +104,6 @@ tr.alt td{background:#f9fafb}
 .modal-head{background:#1B3A5C;color:#fff;padding:.75rem 1.25rem;display:flex;align-items:center;justify-content:space-between}
 .modal-head h3{font-size:13px;font-weight:600;margin:0}
 .modal-body{overflow-y:auto;padding:1rem}
-.modal-close{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:0 4px}
 .cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .cmp-table{width:100%;border-collapse:collapse;font-size:11px}
 .cmp-table th{background:#f0f2f5;padding:5px 8px;text-align:left;font-size:10px;color:#8492a6;font-weight:500}
@@ -113,6 +112,7 @@ tr.alt td{background:#f9fafb}
 
 .badge-medio{display:inline-block;font-size:9px;padding:2px 7px;border-radius:3px;font-weight:700;white-space:nowrap}
 .badge-gpon{background:#dbeafe;color:#1e40af}
+.badge-rpv{background:#e0e7ff;color:#3730a3}
 .badge-lte{background:#fef3c7;color:#92400e}
 .badge-cajero{background:#fae8ff;color:#86198f}
 
@@ -267,6 +267,7 @@ tr.alt td{background:#f9fafb}
     <div class="modal-body">
       <textarea id="warroom-text" spellcheck="false" style="width:100%;min-height:440px;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.45;padding:12px;border:1px solid #dde2ea;border-radius:8px;resize:vertical;white-space:pre"></textarea>
       <div style="margin-top:.75rem;text-align:right">
+        <button class="btn" onclick="varyWarroom()" title="Vuelve a sortear las frases genéricas (reemplaza el texto del cuadro)">🔀 Variar redacción</button>
         <button class="btn btn-p" onclick="copyWarroom()">Copiar texto</button>
       </div>
     </div>
@@ -452,7 +453,6 @@ function exCC(s){
   const str=String(s).trim();
   const m=str.match(/^(\d+)/);
   if(m)return String(parseInt(m[1],10));
-  // Si no empieza con número pero es un cajero u otro identificador único (ej: CAJERO RESIDENCIA DE LOS PINOS)
   return str.toUpperCase();
 }
 
@@ -477,11 +477,9 @@ function extractEntidad(d){
 function inferSeg(d, group){
   const D = d.toUpperCase().replace(/ENERG\u00cdA/g, 'ENERGIA');
 
-  // Extraer TER/ETR si existe
   const terM = D.match(/(?:TER|ETR)\s*(?:DE\s*)?(\d{1,2}:\d{2}(?:\s*HRS?)?)/);
   const ter = terM ? ' TER ' + terM[1].trim() : '';
 
-  // Detectar si hay mención de IDC para anteponer la asistencia requerida
   const tieneIDC = D.includes('IDC');
   const sufijoIDC = tieneIDC ? ' PDT ASISTENCIA DE IDC' : '';
 
@@ -509,8 +507,8 @@ function inferSeg(d, group){
     return {seg: 'EN REVISIÓN DE MEDIO DE TRANSPORTE ASISTE IDC PARA REVISAR CONFIGURACION MODO PUENTE', tag: 'gpon'};
   }
 
-  // 4. Energía vs UPS de Comunicaciones
-  const esUpsGeneral = D.includes('UPS GENERAL') || D.includes('UPS DE SUCURSAL') || D.includes('UPS GENERAL DAÑADO') || D.includes('UPS GENERAL DANADO');
+  // 4. Energía vs UPS
+  const esUpsGeneral = D.includes('UPS GENERAL') || /UPS\s*GRAL/.test(D) || D.includes('UPS DE SUCURSAL') || D.includes('UPS GENERAL DAÑADO') || D.includes('UPS GENERAL DANADO');
   
   if(esUpsGeneral){
     return {seg: 'FALLA DE ENERGÍA POR UPS GENERAL DAÑADO' + sufijoIDC, tag: 'ups'};
@@ -521,7 +519,6 @@ function inferSeg(d, group){
     return {seg: 'FALLA DE ENERGÍA CONFIRMADA ***FAVOR DE VALIDAR EN SM***' + sufijoIDC, tag: 'validar'};
   }
 
-  // Si solo dice UPS, UPS01 o UPS1 (de comunicaciones), se manda a Seguimiento de Medio de Transporte
   if(D.includes('UPS') || D.includes('UPS01') || D.includes('UPS1')){
     return {seg: 'EN REVISIÓN DE MEDIO DE TRANSPORTE EN ATENCIÓN CON PERSONAL DE PLANTA EXTERNA' + sufijoIDC + ter, tag: 'gpon'};
   }
@@ -531,8 +528,8 @@ function inferSeg(d, group){
     return {seg: 'POSIBLE FALLA DE ENERGÍA EN SUCURSAL ***FAVOR DE VALIDAR EN SM***', tag: 'validar'};
   }
 
-  // 6. Siniestro / Robo / Vandalismo
-  if(['SINIESTRO', 'ROBO', 'HURTO'].some(x => D.includes(x))){
+  // 6. Siniestro / Robo / Vandalismo / Daño
+  if(['SINIESTRO', 'SINIESTRADA', 'VANDALIZADA', 'VANDALISMO', 'DAÑADA', 'DANADA', 'CON DAÑO', 'CON DANO', 'ROBO', 'HURTO'].some(x => D.includes(x))){
     return {seg: 'SUCURSAL VANDALIZADA / SINIESTRO SIN ACCESO', tag: 'van'};
   }
 
@@ -541,12 +538,12 @@ function inferSeg(d, group){
     return {seg: 'EN REVISIÓN DE RADIO BASE EN ATENCIÓN POR PERSONAL DE TELCEL' + ter + sufijoIDC, tag: 'lte'};
   }
 
-  // 8. Seguimiento con Transmisiones / Planta Externa (SEG TX / SEGUIMIENTO CON TX)
+  // 8. Seguimiento con Transmisiones / Planta Externa
   if(['SEG TX', 'SEGUIMIENTO CON TX', 'SEGUIMIENTO TX', 'TRANSMISIONES', 'PLANTA EXTERNA'].some(x => D.includes(x))){
     return {seg: 'EN REVISIÓN DE MEDIO DE TRANSPORTE EN ATENCIÓN CON PERSONAL DE PLANTA EXTERNA' + ter + sufijoIDC, tag: 'gpon'};
   }
 
-  // 9. Pendientes de revisión / Checklist
+  // 9. Pendientes / Checklist
   if(['PDT ', 'PDT\t', 'PDT REVISION', 'PDT POR', 'PENDIENTE POR', 'CHECK LIST', 'CHECKLIST'].some(x => D.includes(x))){
     const gt = getGroupType(group);
     const b = gt === 'lte' ? 'EN REVISIÓN DE RADIO BASE EN ATENCIÓN POR PERSONAL DE TELCEL' : 'EN REVISIÓN DE MEDIO DE TRANSPORTE EN ATENCIÓN CON PERSONAL DE PLANTA EXTERNA';
@@ -556,7 +553,7 @@ function inferSeg(d, group){
   // 10. Fallback según tipo de grupo
   const gt = getGroupType(group);
   if(gt === 'lte') return {seg: 'EN REVISIÓN DE RADIO BASE EN ATENCIÓN POR PERSONAL DE TELCEL' + sufijoIDC + ' ***FAVOR DE VALIDAR***' + ter, tag: 'validar'};
-  if(gt === 'gpon' || gt === 'cajero') return {seg: 'EN REVISIÓN DE MEDIO DE TRANSPORTE EN ATENCIÓN CON PERSONAL DE PLANTA EXTERNA' + sufijoIDC + ' ***FAVOR DE VALIDAR***' + ter, tag: 'validar'};
+  if(gt === 'gpon' || gt === 'rpv' || gt === 'cajero') return {seg: SEG_GPON + sufijoIDC + ' ***FAVOR DE VALIDAR***' + ter, tag: 'validar'};
   
   return null;
 }
@@ -565,7 +562,8 @@ function getGroupType(g){
   const s=String(g||'').toUpperCase();
   if(['LTE','SUCURSAL_LTE'].some(k=>s.includes(k)))return'lte';
   if(['CAJERO'].some(k=>s.includes(k)))return'cajero';
-  if(['GPON','RPV','C-01','C-02','C-03','A-31','A-32','C01','C02','C03','A31','A32','SUCURSAL_RPV','SUCURSAL_GPON','SUCURSAL_LEGACY'].some(k=>s.includes(k)))return'gpon';
+  if(['GPON','SUCURSAL_GPON'].some(k=>s.includes(k)))return'gpon';
+  if(['RPV','C-01','C-02','C-03','A-31','A-32','C01','C02','C03','A31','A32','SUCURSAL_RPV','SUCURSAL_LEGACY'].some(k=>s.includes(k)))return'rpv';
   return'other';
 }
 
@@ -599,28 +597,6 @@ function kf(obj,name){
     if(found)return found;
   }
   return name;
-}
-
-function calcTiempo(inicio,fin){
-  if(!inicio||inicio.length<8)return '';
-  try{
-    const parts=inicio.replace('CHECK ','').trim().split(' ');
-    const datePart=parts[0];
-    const timePart=parts[1]||'00:00';
-    const dp=datePart.split('/');
-    if(dp.length<3)return '';
-    let d,m,y;
-    if(parseInt(dp[0],10)<32){d=parseInt(dp[0],10);m=parseInt(dp[1],10);y=2000+parseInt(dp[2],10);}
-    else{y=2000+parseInt(dp[0],10);m=parseInt(dp[1],10);d=parseInt(dp[2],10);}
-    const tp=timePart.split(':');
-    const startDate=new Date(y,m-1,d,parseInt(tp[0],10),parseInt(tp[1]||'0',10));
-    const endDate=fin&&fin.length>4?new Date(fin):new Date();
-    const diffMs=endDate-startDate;
-    if(diffMs<0)return '';
-    const hrs=Math.floor(diffMs/3600000);
-    const mins=Math.floor((diffMs%3600000)/60000);
-    return hrs+'h '+mins.toString().padStart(2,'0')+'m';
-  }catch(e){return '';}
 }
 
 // SUPABASE
@@ -844,7 +820,6 @@ async function run(){
       const cc=exCC(r[siK]);
       if(!cc)continue;
       
-      // PRIORIDAD ABSOLUTA: DESCRIPTION primero, luego SUMMARY
       const desc=String(r[dK]||'').trim();
       const summ=String(r[sumK]||'').trim();
       const combined=desc+(summ&&summ!==desc?' || '+summ:'');
@@ -890,34 +865,32 @@ async function run(){
           fin=inc_r.resolvedTime;
           tag='activo';
         } else {
-          // Inferir usando description + summary priorizados
           const inf=inferSeg(inc_r.desc,group);
           if(inf){seg=inf.seg;tag=inf.tag;}
           else{
             const gt=getGroupType(group);
-            seg=gt==='lte'?SEG_LTE:gt==='gpon'?SEG_GPON:'';
-            tag=gt==='lte'?'lte':'gpon';
+            seg=gt==='lte'?SEG_LTE:SEG_GPON;
+            tag=gt;
           }
         }
       } else {
         const t=getGroupType(group);
         if(t==='lte'){seg=SEG_LTE;tag='lte';}
-        else if(t==='gpon'||t==='cajero'){seg=SEG_GPON;tag='gpon';}
+        else if(t==='gpon'||t==='rpv'||t==='cajero'){seg=SEG_GPON;tag=t;}
       }
       const gtType=getGroupType(group);
-      const medio=gtType==='lte'?'LTE':gtType==='cajero'?'CAJERO':'GPON/RPV';
-      rows.push({cc,suc,seg,inicio,fin,isVan,hasInc:!!inc_r,tag,medio,degradedFrom,desc:inc_r?inc_r.desc:''});
+      const medio = gtType==='lte'?'LTE': gtType==='cajero'?'CAJERO': gtType==='gpon'?'GPON': 'RPV';
+      rows.push({cc,suc,seg,inicio,fin,isVan,hasInc:!!inc_r,tag,medio,group,degradedFrom,desc:inc_r?inc_r.desc:''});
     }
     
-    // Ordenar resultados alfanuméricamente por C.C.
     rows.sort((a,b)=>String(a.cc).localeCompare(String(b.cc),undefined,{numeric:true}));
     renderResults();
   }catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
   btn.disabled=false;btn.textContent='Procesar y cruzar archivos';
 }
 
-const TL={gpon:'GPON/RPV',lte:'LTE',fibra:'FIBRA',van:'VANDALIZADA',masiva:'FALLA MASIVA',ups:'ENERGIA/UPS',validar:'VALIDAR',activo:'ACTIVO',check:'MI CHECK'};
-const TC={gpon:'tg',lte:'tl',fibra:'tf',van:'tv',masiva:'tf',ups:'tl',validar:'tv',activo:'tg',check:'tg'};
+const TL={gpon:'GPON',rpv:'RPV',lte:'LTE',fibra:'FIBRA',van:'VANDALIZADA',masiva:'FALLA MASIVA',ups:'ENERGIA/UPS',validar:'VALIDAR',activo:'ACTIVO',check:'MI CHECK'};
+const TC={gpon:'tg',rpv:'tg',lte:'tl',fibra:'tf',van:'tv',masiva:'tf',ups:'tl',validar:'tv',activo:'tg',check:'tg'};
 
 function renderResults(){
   const vanC=rows.filter(r=>r.isVan).length;
@@ -936,11 +909,11 @@ function renderResults(){
 
   document.getElementById('tb').innerHTML=rows.map((r,i)=>{
     const isVal=r.seg&&r.seg.includes('VALIDAR');
-    const rc=r.tag==='check'?'chk':r.isVan?'van':isVal?'validar':r.hasInc?'inc':r.tag==='gpon'?'ag':r.tag==='lte'?'al':(i%2===0?'alt':'');
+    const rc=r.tag==='check'?'chk':r.isVan?'van':isVal?'validar':r.hasInc?'inc':r.tag==='gpon'?'ag':r.tag==='rpv'?'ag':r.tag==='lte'?'al':(i%2===0?'alt':'');
     const tl=TL[r.tag]||'',tc=TC[r.tag]||'';
     const sh=r.seg?(r.seg+(tl?`<br><span class="tag ${tc}">${tl}</span>`:'')):('<span class="pend">pendiente</span>');
     const finHtml=r.fin?`<span style='color:#085041;font-weight:600'>${r.fin}</span>`:'—';
-    const medioCls=r.medio==='LTE'?'badge-lte':r.medio==='CAJERO'?'badge-cajero':'badge-gpon';
+    const medioCls=r.medio==='LTE'?'badge-lte':r.medio==='CAJERO'?'badge-cajero':r.medio==='GPON'?'badge-gpon':'badge-rpv';
     return`<tr class="${rc}"><td>${r.cc}</td><td style="white-space:normal;font-size:11px">${r.suc}</td><td style="text-align:center"><span class="badge-medio ${medioCls}">${r.medio||''}</span></td><td class="seg">${sh}</td><td style="font-size:10px;font-family:monospace">${r.inicio}</td><td style="font-size:10px;font-family:monospace">${finHtml}</td></tr>`;
   }).join('');
   document.getElementById('results').style.display='block';
@@ -958,15 +931,44 @@ function showToast(m){const t=document.getElementById('toast');t.textContent=m;t
 
 const MESES_ES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
+// ===== VARIACIONES DE REDACCIÓN PARA STATUS WARROOM =====
+const WR_VARIANTES={
+  gpon:  ['EN REVISIÓN DE ÚLTIMA MILLA','TURNADO CON PERSONAL DE PLANTA'],
+  rpv:   ['EN SEGUIMIENTO CON TRANSMISIONES','EN REVISIÓN DE MEDIO DE TRANSPORTE'],
+  fibra: ['CORTE A CABLE DE F.O','AFECTADO POR CORTE DE FIBRA','CORTE A CABLE DE F.O, LOCALIZANDO DAÑO'],
+  telcel:['EN SEGUIMIENTO CON TELCEL','EN REVISIÓN DE RADIO BASE','SITIO DE COBERTURA FUERA, EN SEGUIMIENTO CON TELCEL']
+};
+let WR_SALT=0;
+
+function wrSeed(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function wrRng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+function wrSubtipo(group){
+  const gt = getGroupType(group);
+  return gt === 'gpon' ? 'gpon' : 'rpv';
+}
+
+function wrMakePicker(seedStr){
+  const rnd=wrRng(wrSeed(seedStr)),hist={};
+  return function(key){
+    const pool=WR_VARIANTES[key],h=hist[key]||(hist[key]=[]);
+    let idx=Math.floor(rnd()*pool.length);
+    if(h.length>=2&&h[h.length-1]===h[h.length-2]&&idx===h[h.length-1])
+      idx=(idx+1+Math.floor(rnd()*(pool.length-1)))%pool.length;
+    h.push(idx);
+    return pool[idx];
+  };
+}
+
 function buildWarroomText(){
   const now = new Date();
   const dia = now.getDate();
   const mes = MESES_ES[now.getMonth()];
   const mesCap = mes.charAt(0).toUpperCase() + mes.slice(1);
   const hh = String(now.getHours()).padStart(2, '0');
-  const mm = String(now.getMinutes()).padStart(2, '0');
 
   const tx = [], telcel = [], energia = [], masiva = [], cliente = [];
+  const pick = wrMakePicker(`${dia}-${now.getMonth()}-${hh}-${WR_SALT}`);
 
   for(const r of rows){
     if(!r.seg) continue;
@@ -975,6 +977,16 @@ function buildWarroomText(){
     const descU = (r.desc || '').toUpperCase();
     const combo = segU + ' ' + descU;
 
+    // 1. Sitios sin acceso / Vandalizadas / Dañadas / Siniestradas / Falla de UPS General
+    const isSinAcceso = r.tag === 'van' ||
+      ['VANDALIZ', 'SINIESTR', 'DAÑAD', 'DANAD', 'CON DAÑO', 'CON DANO', 'ROBO', 'HURTO', 'FALTA DE PERSONAL', 'UPS GENERAL', 'UPS GRAL', 'UPS DE SUCURSAL'].some(k => combo.includes(k));
+
+    if(isSinAcceso){
+      cliente.push({cc: r.cc, suc: r.suc, seg: r.seg});
+      continue;
+    }
+
+    // 2. Energía (CFE / Acometida / ONT apagada)
     const isEnergiaConfirmada = r.tag === 'ups';
     const isEnergiaOnt = r.tag === 'validar' && segU.startsWith('POSIBLE FALLA DE ENERGÍA');
     const isEnergiaPosible = r.tag === 'validar' && !isEnergiaOnt && (segU.includes('ENERGÍA') || segU.includes('ENERGIA'));
@@ -983,44 +995,59 @@ function buildWarroomText(){
     if(isEnergiaOnt){ energia.push({cc: r.cc, suc: r.suc, seg: 'ALARMA DE ONT APAGADA EN PROCESO DE CHECKLIST'}); continue; }
     if(isEnergiaPosible){ energia.push({cc: r.cc, suc: r.suc, seg: 'POSIBLE FALLA DE ENERGÍA EN PROCESO DE CHECKLIST'}); continue; }
 
-    if(r.tag === 'van'){ cliente.push({cc: r.cc, suc: r.suc, seg: r.seg}); continue; }
-
+    // 3. Fallas Masivas
     if(r.tag === 'masiva' || combo.includes('MASIVA') || combo.includes('IMCNOC')){
       masiva.push({cc: r.cc, suc: r.suc, seg: r.seg}); continue;
     }
+
+    // 4. Energía / UPS residual
     if(combo.includes('ENERGIA') || combo.includes('ENERGÍA') || combo.includes('UPS')){
       energia.push({cc: r.cc, suc: r.suc, seg: r.seg}); continue;
     }
+
+    // 5. Telcel / LTE
     if(r.tag === 'lte' || combo.includes('TELCEL') || combo.includes('RADIO BASE') || combo.includes('RADIOBASE')){
       telcel.push({cc: r.cc, suc: r.suc, seg: r.seg}); continue;
     }
-    if(r.tag === 'gpon' || r.tag === 'fibra' || combo.includes('TRANSMISIONES') || combo.includes('TRANSPORTE') || combo.includes('PLANTA EXTERNA') || combo.includes('FIBRA')){
-      tx.push({cc: r.cc, suc: r.suc, seg: r.seg}); continue;
+
+    // 6. Transmisiones / GPON / RPV / Fibra
+    if(r.tag === 'gpon' || r.tag === 'rpv' || r.tag === 'fibra' || combo.includes('TRANSMISIONES') || combo.includes('TRANSPORTE') || combo.includes('PLANTA EXTERNA') || combo.includes('FIBRA')){
+      tx.push({cc: r.cc, suc: r.suc, seg: r.seg, sub: wrSubtipo(r.group)}); continue;
     }
 
     if(r.medio === 'LTE') telcel.push({cc: r.cc, suc: r.suc, seg: r.seg});
-    else tx.push({cc: r.cc, suc: r.suc, seg: r.seg});
+    else tx.push({cc: r.cc, suc: r.suc, seg: r.seg, sub: wrSubtipo(r.group)});
   }
 
   const total = tx.length + telcel.length + energia.length + masiva.length + cliente.length;
 
-  function simplificarStatus(texto) {
+  function limpiarValidar(texto) {
     if (!texto) return '';
     return texto
-      .replace(/EN REVISIÓN DE RADIO BASE EN ATENCIÓN POR PERSONAL DE TELCEL/g, 'EN SEGUIMIENTO CON TELCEL')
-      .replace(/EN REVISIÓN DE MEDIO DE TRANSPORTE EN ATENCIÓN CON PERSONAL DE PLANTA EXTERNA/g, 'EN SEGUIMIENTO CON TRANSMISIONES')
-      .replace(/CORTE A CABLE DE FIBRA ÓPTICA EN ATENCIÓN POR PERSONAL DE PLANTA EXTERNA/g, 'CORTE DE FIBRA ÓPTICA')
       .replace(/\s*\*\*\*FAVOR DE VALIDAR EN SM\*\*\*/g, '')
-      .replace(/\s*\*\*\*FAVOR DE VALIDAR\*\*\*/g, '');
+      .replace(/\s*\*\*\*FAVOR DE VALIDAR\*\*\*/g, '')
+      .replace(/\s*\*\*\*VALIDAR IMCNOC EN SM\*\*\*/g, '');
   }
 
-  function fmtLine(it){
-    let seg = simplificarStatus(it.seg || '').trim();
+  function variarStatus(texto, it, lista){
+    let t = limpiarValidar(texto || '');
+    if(lista === 'tx'){
+      t = t.replace(/EN REVISIÓN DE MEDIO DE TRANSPORTE EN ATENCIÓN CON PERSONAL DE PLANTA EXTERNA/g, () => pick(it.sub));
+      t = t.replace(/CORTE A CABLE DE FIBRA ÓPTICA EN ATENCIÓN CON PERSONAL DE PLANTA EXTERNA/g, () => pick('fibra'));
+      t = t.replace(/CORTE A CABLE DE FIBRA ÓPTICA EN ATENCIÓN POR PERSONAL DE PLANTA EXTERNA/g, () => pick('fibra'));
+    } else if(lista === 'telcel'){
+      t = t.replace(/EN REVISIÓN DE RADIO BASE EN ATENCIÓN POR PERSONAL DE TELCEL/g, () => pick('telcel'));
+    }
+    return t;
+  }
+
+  function fmtLine(it, lista){
+    let seg = variarStatus(it.seg || '', it, lista).trim();
     if(seg && !/[.!]$/.test(seg)) seg += '.';
     return `*${it.cc}* ${it.suc}\n${seg}\n`;
   }
   
-  function block(list){ return list.length ? list.map(fmtLine).join('\n') + '\n' : ''; }
+  function block(list, lista){ return list.length ? list.map(it => fmtLine(it, lista)).join('\n') + '\n' : ''; }
 
   let out = '';
   out += 'Buen Día, Se envía corte para Banco del Bienestar - WARROOM\n';
@@ -1035,10 +1062,10 @@ function buildWarroomText(){
   out += `*${cliente.length}\tSitios sin acceso por siniestro o falta de personal 🏦\n`;
   out += '---------------\n';
   out += `👨🏻‍🔧 SEGUIMIENTO CON TX: ${tx.length}\n`;
-  out += block(tx);
+  out += block(tx, 'tx');
   out += '------------------------------\n';
   out += `📡 SEGUIMIENTO CON TELCEL: ${telcel.length}\n`;
-  out += block(telcel);
+  out += block(telcel, 'telcel');
   out += '---------------------------------\n';
   out += `🔌 FALLA DE ENERGÍA: ${energia.length}\n`;
   out += block(energia);
@@ -1053,8 +1080,14 @@ function buildWarroomText(){
 }
 
 function openWarroom(){
+  WR_SALT=0;
   document.getElementById('warroom-text').value=buildWarroomText();
   document.getElementById('modal-warroom').classList.add('show');
+}
+function varyWarroom(){
+  WR_SALT++;
+  document.getElementById('warroom-text').value=buildWarroomText();
+  showToast('Redacción variada');
 }
 function copyWarroom(){
   const t=document.getElementById('warroom-text');
