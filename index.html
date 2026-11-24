@@ -1084,7 +1084,7 @@ function buildWarroomText(){
       ['VANDALIZ', 'SINIESTR', 'DAÑAD', 'DANAD', 'CON DAÑO', 'CON DANO', 'ROBO', 'HURTO', 'FALTA DE PERSONAL', 'UPS GENERAL', 'UPS GRAL', 'UPS DE SUCURSAL'].some(k => combo.includes(k));
 
     if(isSinAcceso){
-      cliente.push({cc: r.cc, suc: r.suc, seg: r.seg});
+      cliente.push({cc: r.cc, suc: r.suc, seg: r.seg, inicio: r.inicio});
       continue;
     }
 
@@ -1143,9 +1143,32 @@ function buildWarroomText(){
     return t;
   }
 
+  // Fecha (dd/mm/aaaa) a partir del Inicio registrado; acepta dd/mm/aaaa, aaaa-mm-dd o serial de Excel
+  function wrFecha(v){
+    v = String(v || '').trim();
+    if(!v) return '';
+    let m = v.match(/(?:^|\D)(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})(?!\d)/);
+    if(m) return m[3].padStart(2,'0') + '/' + m[2].padStart(2,'0') + '/' + m[1];
+    m = v.match(/(?:^|\D)(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})(?!\d)/);
+    if(m){
+      let y = m[3].length === 2 ? '20' + m[3] : m[3];
+      return m[1].padStart(2,'0') + '/' + m[2].padStart(2,'0') + '/' + y;
+    }
+    if(/^\d{5}(\.\d+)?$/.test(v)){
+      const d = new Date(Math.round((parseFloat(v) - 25569) * 86400000));
+      return String(d.getUTCDate()).padStart(2,'0') + '/' + String(d.getUTCMonth()+1).padStart(2,'0') + '/' + d.getUTCFullYear();
+    }
+    return '';
+  }
+
   function fmtLine(it, lista){
     let seg = variarStatus(it.seg || '', it, lista).trim();
-    if(seg && !/[.!]$/.test(seg)) seg += '.';
+    if(lista === 'cliente' && seg && !/\bDESDE\b/i.test(seg)){
+      const f = wrFecha(it.inicio);
+      if(f) seg += ' DESDE ' + f + ' ';
+    }
+    seg = seg.trim();
+    if(seg && !/[.!]$/.test(seg) && !/DESDE \d{2}\/\d{2}\/\d{4}$/.test(seg)) seg += '.';
     return `*${it.cc}* ${it.suc}\n${seg}\n`;
   }
   
@@ -1161,7 +1184,7 @@ function buildWarroomText(){
   out += `*${telcel.length}\tSuc. Seguimiento Telcel 📡\n`;
   out += `*${energia.length}\tSuc. Falla Energía 🔌\n`;
   out += `*${masiva.length}\tMasiva ⚡\n`;
-  out += `*${cliente.length}\tSitios sin acceso por siniestro, sin energia o falta de personal del BANBIEN🏦\n`;
+  out += `*${cliente.length}\tSitios sin acceso por siniestro, sin energia o falta de personal del BANBIEN 🏦\n`;
   out += '---------------\n';
   out += `👨🏻‍🔧 SEGUIMIENTO CON TX: ${tx.length}\n`;
   out += block(tx, 'tx');
@@ -1176,7 +1199,7 @@ function buildWarroomText(){
   out += block(masiva);
   out += '---------------------------------\n';
   out += `🏦 SITIOS SIN ACCESO POR SINIESTRO, SIN ENERGIA O FALTA DE PERSONAL DEL BANBIEN: ${cliente.length}\n`;
-  out += block(cliente);
+  out += block(cliente, 'cliente');
 
   return out.replace(/\n+$/, '\n');
 }
